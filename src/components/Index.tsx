@@ -1,0 +1,243 @@
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { MetricsCard } from "@/components/dashboard/MetricsCard";
+import { IssueTable } from "@/components/dashboard/IssueTable";
+import VelocityTable from "@/components/dashboard/VelocityTable";
+import { linearService } from "@/services/linearService";
+import { LinearIssue, TeamMetrics, LinearTeam } from "@/types/linear";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart, Users, Clock, Activity, RefreshCw, Settings, List, AlertCircle, TrendingUp } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { getLinearApiKey, setLinearApiKey } from "@/config/api-config";
+import { ApiKeyConfig } from "@/components/config/ApiKeyConfig";
+import { Link } from "react-router-dom";
+import { Slack } from "lucide-react";
+
+// Explicitly list the exact allowed teams
+const ALLOWED_TEAMS = [
+  // Updated to be more flexible with team names
+  "Linking", 
+  "New Architecture",
+  "Product & Situation Extraction",
+  "Product Support",
+  "Product support answers",
+  "Engineering",
+  "Frontend",
+  "Backend",
+  "Infrastructure",
+  "Data",
+  "Design",
+  "Research",
+  "QA"
+];
+
+// Team to explicitly exclude (the standalone "Product" team)
+const EXCLUDED_TEAMS = ["Product"];
+
+const Index = () => {
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [showApiConfig, setShowApiConfig] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  
+  // Check for API key on mount
+  useEffect(() => {
+    const currentKey = getLinearApiKey();
+    if (!currentKey) {
+      setShowApiConfig(true);
+    } else {
+      try {
+        linearService.setApiKey(currentKey);
+      } catch (error) {
+        console.error('Error setting API key:', error);
+        setShowApiConfig(true);
+        toast.error('Invalid API key. Please enter a valid Linear API key.');
+      }
+    }
+  }, []);
+  
+  const hasApiKey = !!getLinearApiKey();
+
+  // Fetch teams - Added retry logic and better error handling
+  const teamsQuery = useQuery<LinearTeam[]>({
+    queryKey: ['teams'],
+    queryFn: linearService.getTeams.bind(linearService),
+    meta: {
+      onError: (error: any) => {
+        console.error("Team fetch error:", error);
+        const errorMessage = error.message || "Unknown error";
+        toast.error(`Failed to fetch teams: ${errorMessage}`);
+      }
+    },
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
+  });
+
+  // Improved team filtering - include only the specific allowed teams and exclude the standalone Product team
+  const filteredTeams = teamsQuery.data?.filter(team => {
+    // For debugging
+    console.log(`Checking team: "${team.name}"`);
+    
+    // Restore original filtering logic with improvements
+    // Must have a team name
+    if (!team.name) return false;
+    
+    // More flexible team matching - check if any allowed team name is contained within the actual team name
+    const isAllowed = ALLOWED_TEAMS.some(allowedTeam => 
+      team.name.toLowerCase().includes(allowedTeam.toLowerCase())
+    );
+    
+    // Must not be in excluded teams
+    const isExcluded = EXCLUDED_TEAMS.some(excludedTeam => 
+      team.name.toLowerCase() === excludedTeam.toLowerCase()
+    );
+    
+    const shouldInclude = isAllowed && !isExcluded;
+    
+    if (shouldInclude) {
+      console.log(`Including team: "${team.name}"`);
+    }
+    
+    return shouldInclude;
+  });
+
+  console.log("All teams:", teamsQuery.data);
+  console.log("Allowed teams:", ALLOWED_TEAMS);
+  console.log("Filtered teams:", filteredTeams);
+
+  // Set initial team when teams are loaded
+  useEffect(() => {
+    if (filteredTeams && filteredTeams.length > 0 && !selectedTeamId) {
+      setSelectedTeamId(filteredTeams[0].id);
+    }
+  }, [filteredTeams, selectedTeamId]);
+
+  // Fetch metrics for the selected team
+  const metricsQuery = useQuery<TeamMetrics>({
+    queryKey: ['team-metrics', selectedTeamId, lastRefresh],
+    queryFn: () => selectedTeamId ? linearService.getTeamMetrics(selectedTeamId) : Promise.reject("No team selected"),
+    enabled: !!selectedTeamId && hasApiKey,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    meta: {
+      onError: (error: any) => {
+        console.error("Metrics fetch error:", error);
+        toast.error(`Failed to fetch metrics: ${error.message}`);
+      }
+    }
+  });
+  
+  // Fetch issues for the selected team
+  const issuesQuery = useQuery<LinearIssue[]>({
+    queryKey: ['team-issues', selectedTeamId, lastRefresh],
+    queryFn: () => selectedTeamId ? linearService.getIssuesByTeam(selectedTeamId) : Promise.reject("No team selected"),
+    enabled: !!selectedTeamId && hasApiKey,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    meta: {
+      onError: (error: any) => {
+        console.error("Issues fetch error:", error);
+        toast.error(`Failed to fetch issues: ${error.message}`);
+      }
+    }
+  });
+
+  // Handle manual refresh - now updates the lastRefresh timestamp to force a new query
+  const handleRefresh = () => {
+    if (selectedTeamId) {
+      toast.info("Refreshing data...");
+      // Update lastRefresh to trigger new queries
+      setLastRefresh(Date.now());
+    }
+  };
+
+  // Get the current team name
+  const currentTeam = filteredTeams?.find((team) => team.id === selectedTeamId);
+  const teamName = currentTeam?.name || "Team";
+  const loading = teamsQuery.isLoading || metricsQuery.isLoading || issuesQuery.isLoading;
+  const metrics = metricsQuery.data;
+
+  // If the API config is being shown, render only the config component
+  if (showApiConfig) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <DashboardHeader 
+            title="Linear Integration Setup"
+            subtitle="Connect your Linear account to access your team's performance metrics" 
+          />
+          <ApiKeyConfig onSuccessfulConnection={() => setShowApiConfig(false)} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <DashboardHeader 
+            title={`${teamName} Performance`}
+            subtitle="Monitor your team's performance metrics from Linear" 
+            onRefresh={handleRefresh}
+          />
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => setShowApiConfig(true)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <Settings className="h-4 w-4" />
+              API Config
+            </Button>
+            {/* Slack notification button hidden
+            <Link to="/slack-integration">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+              >
+                <Slack className="h-4 w-4" />
+                Slack Notifications
+              </Button>
+            </Link>
+            */}
+          </div>
+        </div>
+        {/* All cards and tabs hidden below
+        ...
+        */}
+        {/* Only show team selection, VelocityTable, and VelocityPerEngineer below */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {filteredTeams?.map((team) => (
+            <button
+              key={team.id}
+              onClick={() => setSelectedTeamId(team.id)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                selectedTeamId === team.id 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-muted hover:bg-muted/80'
+              }`}
+            >
+              {team.name}
+            </button>
+          ))}
+        </div>
+        <VelocityTable 
+          teamId={selectedTeamId || ''}
+          onRefresh={handleRefresh}
+          selectedCycleId={selectedCycleId}
+          setSelectedCycleId={setSelectedCycleId}
+        />
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default Index; 

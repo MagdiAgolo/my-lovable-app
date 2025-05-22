@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#d9d9d9" />
+  <!-- First parallelogram (lighter green) -->
+  <polygon points="6,20 14,8 14,24 6,36" fill="#54d667" />
+  <!-- Second parallelogram (darker green) -->
+  <polygon points="18,20 26,8 26,24 18,36" fill="#1a672a" />
+</svg>
