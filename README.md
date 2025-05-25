@@ -1,3 +1,22 @@
+# My Lovable App - Sprint Velocity Dashboard
+
+A dashboard application for tracking sprint velocity and team performance.
+
+## Features
+- Sprint velocity tracking
+- Engineer performance metrics
+- Team selection filtering
+- Intuitive dashboard layout
+
+## Getting Started
+```bash
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev
+```
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
