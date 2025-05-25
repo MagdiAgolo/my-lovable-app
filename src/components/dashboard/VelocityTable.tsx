@@ -1064,33 +1064,6 @@ export default function VelocityTable({ teamId, onRefresh, selectedCycleId, setS
                       setSearchQuery(value);
                     }}
                   />
-                  
-                  {/* Add a specialized button for Fatma's issues */}
-                  <Button
-                    onClick={async () => {
-                      // Directly call the specialized method for Fatma's issues
-                      try {
-                        const fatmaIssues = await linearService.getFatmaIssuesForSprint19(teamId);
-                        console.log("Specialized Fatma query result:", fatmaIssues);
-                        
-                        // Set filtered issues to Fatma's issues if we found any
-                        if (fatmaIssues.length > 0) {
-                          setFilteredIssues(fatmaIssues);
-                          toast.success(`Found ${fatmaIssues.length} issues for Fatma using specialized query`);
-                        } else {
-                          toast.error("No issues found for Fatma with specialized query");
-                        }
-                      } catch (error) {
-                        console.error("Error fetching Fatma's issues:", error);
-                        toast.error("Error fetching Fatma's issues");
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="bg-blue-50"
-                  >
-                    Fatma Debug
-                  </Button>
                 </div>
                 <Button
                   onClick={() => setShowIssues(true)}
