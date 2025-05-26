@@ -1,0 +1,132 @@
+// Chart theme stylesheet
+// This file defines color overrides for charts to match the Implicit.cloud green theme
+
+// Chart colors - primary palette
+$chart-primary: #4BCA7A;
+$chart-secondary: #5ED48C;
+$chart-tertiary: #3FA667;
+$chart-quaternary: #2D8B4E;
+
+// Chart accent colors
+$chart-accent-1: rgba(75, 202, 122, 0.8);
+$chart-accent-2: rgba(75, 202, 122, 0.6);
+$chart-accent-3: rgba(75, 202, 122, 0.4);
+$chart-accent-4: rgba(75, 202, 122, 0.2);
+
+// Chart backgrounds and grid colors
+$chart-bg: rgba(11, 18, 32, 0.3);
+$chart-grid: rgba(234, 239, 248, 0.07);
+$chart-tooltip-bg: rgba(17, 24, 39, 0.9);
+
+// Export as CSS variables
+:root {
+  // Primary chart colors
+  --chart-primary: #{$chart-primary};
+  --chart-secondary: #{$chart-secondary};
+  --chart-tertiary: #{$chart-tertiary};
+  --chart-quaternary: #{$chart-quaternary};
+  
+  // Chart accents
+  --chart-accent-1: #{$chart-accent-1};
+  --chart-accent-2: #{$chart-accent-2};
+  --chart-accent-3: #{$chart-accent-3};
+  --chart-accent-4: #{$chart-accent-4};
+  
+  // Chart backgrounds
+  --chart-bg: #{$chart-bg};
+  --chart-grid: #{$chart-grid};
+  --chart-tooltip-bg: #{$chart-tooltip-bg};
+}
+
+// Apply styles to common chart libraries
+
+// Generic chart styles that apply to most chart libraries
+.chart-container {
+  background-color: var(--color-bg-card);
+  border-radius: 12px;
+  border: 1px solid rgba(234, 239, 248, 0.05);
+  
+  // Axes and grid lines
+  line, path {
+    &.grid, &.domain {
+      stroke: var(--chart-grid);
+    }
+  }
+  
+  // Text elements
+  text {
+    fill: var(--color-neutral-300);
+  }
+  
+  // Tooltips
+  .tooltip {
+    background-color: var(--chart-tooltip-bg);
+    border: 1px solid var(--color-primary);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: var(--color-neutral-100);
+  }
+}
+
+// Recharts specific overrides
+.recharts-default-tooltip {
+  background-color: var(--chart-tooltip-bg) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--chart-grid) !important;
+}
+
+.recharts-line-curve {
+  stroke: var(--chart-primary) !important;
+}
+
+.recharts-bar-rectangle {
+  fill: var(--chart-primary) !important;
+}
+
+.recharts-area-area {
+  fill: var(--chart-accent-3) !important;
+}
+
+// Chart.js specific overrides
+canvas.chartjs-render-monitor {
+  background-color: transparent;
+}
+
+// Victory Charts overrides
+.VictoryContainer {
+  .VictoryLine {
+    path {
+      stroke: var(--chart-primary) !important;
+    }
+  }
+  
+  .VictoryBar {
+    path {
+      fill: var(--chart-primary) !important;
+    }
+  }
+  
+  .VictoryArea {
+    path {
+      fill: var(--chart-accent-3) !important;
+    }
+  }
+}
+
+// ApexCharts overrides
+.apexcharts-series {
+  path.apexcharts-line {
+    stroke: var(--chart-primary) !important;
+  }
+  
+  path.apexcharts-area {
+    fill: var(--chart-accent-3) !important;
+  }
+  
+  rect.apexcharts-bar-area {
+    fill: var(--chart-primary) !important;
+  }
+} 

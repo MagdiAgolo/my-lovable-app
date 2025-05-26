@@ -320,10 +320,17 @@ export const linearService = {
                 estimate
                 createdAt
                 completedAt
+                updatedAt
+                description
+                priority
                 assignee {
                   id
                   name
                   email
+                }
+                parent {
+                  id
+                  title
                 }
                 cycle {
                   id
@@ -417,9 +424,11 @@ export const linearService = {
           estimate: issue.estimate,
           createdAt: issue.createdAt,
           completedAt: issue.completedAt,
+          updatedAt: issue.updatedAt,
           description: issue.description || '',
           priority: issue.priority || 0,
           assignee: issue.assignee || null,
+          epic: issue.parent || null,
           state: issue.state,
           team,
           cycle: issue.cycle,
@@ -472,10 +481,17 @@ export const linearService = {
                 estimate
                 createdAt
                 completedAt
+                updatedAt
+                description
+                priority
                 assignee {
                   id
                   name
                   email
+                }
+                parent {
+                  id
+                  title
                 }
                 cycle {
                   id
@@ -515,9 +531,11 @@ export const linearService = {
         estimate: issue.estimate,
         createdAt: issue.createdAt,
         completedAt: issue.completedAt,
+        updatedAt: issue.updatedAt,
         description: issue.description || '',
         priority: issue.priority || 0,
         assignee: issue.assignee || null,
+        epic: issue.parent || null,
         state: issue.state,
         team,
         cycle: issue.cycle,

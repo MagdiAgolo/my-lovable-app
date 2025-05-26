@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { MetricsCard } from "@/components/dashboard/MetricsCard";
-import { IssueTable } from "@/components/dashboard/IssueTable";
 import VelocityTable from "@/components/dashboard/VelocityTable";
 import { linearService } from "@/services/linearService";
 import { LinearIssue, TeamMetrics, LinearTeam } from "@/types/linear";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Users, Clock, Activity, RefreshCw, Settings, List, AlertCircle, TrendingUp } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { Button } from "@/components/ui/button";
 import { getLinearApiKey, setLinearApiKey } from "@/config/api-config";
 import { ApiKeyConfig } from "@/components/config/ApiKeyConfig";
-import { Link } from "react-router-dom";
-import { Slack } from "lucide-react";
+import { SprintHistoryView } from "@/components/dashboard/SprintHistoryView";
 
 // Explicitly list the exact allowed teams
 const ALLOWED_TEAMS = [
@@ -166,11 +158,7 @@ const Index = () => {
   if (showApiConfig) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
-          <DashboardHeader 
-            title="Linear Integration Setup"
-            subtitle="Connect your Linear account to access your team's performance metrics" 
-          />
+        <div className="space-y-6 p-4 w-full">
           <ApiKeyConfig onSuccessfulConnection={() => setShowApiConfig(false)} />
         </div>
       </DashboardLayout>
@@ -179,63 +167,16 @@ const Index = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <DashboardHeader 
-            title={`${teamName} Performance`}
-            subtitle="Monitor your team's performance metrics from Linear" 
-            onRefresh={handleRefresh}
-          />
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={() => setShowApiConfig(true)}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-            >
-              <Settings className="h-4 w-4" />
-              API Config
-            </Button>
-            {/* Slack notification button hidden
-            <Link to="/slack-integration">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center gap-1"
-              >
-                <Slack className="h-4 w-4" />
-                Slack Notifications
-              </Button>
-            </Link>
-            */}
-          </div>
-        </div>
-        {/* All cards and tabs hidden below
-        ...
-        */}
-        {/* Only show team selection, VelocityTable, and VelocityPerEngineer below */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {filteredTeams?.map((team) => (
-            <button
-              key={team.id}
-              onClick={() => setSelectedTeamId(team.id)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                selectedTeamId === team.id 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-muted hover:bg-muted/80'
-              }`}
-            >
-              {team.name}
-            </button>
-          ))}
-        </div>
-        <VelocityTable 
-          teamId={selectedTeamId || ''}
-          onRefresh={handleRefresh}
-          selectedCycleId={selectedCycleId}
-          setSelectedCycleId={setSelectedCycleId}
-        />
-      </div>
+      <SprintHistoryView 
+        selectedTeamId={selectedTeamId || ''}
+        filteredTeams={filteredTeams}
+        setSelectedTeamId={setSelectedTeamId}
+        onRefresh={handleRefresh}
+        selectedCycleId={selectedCycleId}
+        setSelectedCycleId={setSelectedCycleId}
+        teamName={teamName}
+        onApiConfigClick={() => setShowApiConfig(true)}
+      />
     </DashboardLayout>
   );
 };

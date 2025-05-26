@@ -1,0 +1,77 @@
+// Implicit.cloud brand colors - redesigned
+$primary: #4BCA7A; // Green accent color
+$primary-light: #5ED48C;
+$primary-dark: #3FA667;
+
+$secondary: #232D4C; // Dark blue/slate color for text and secondary elements
+$secondary-light: #2E3A5C;
+$secondary-dark: #1A2442;
+
+// Background colors
+$bg-dark: #0B1220; // Deep navy/dark blue for main background
+$bg-darker: #070E1B;
+$bg-card: #111827; // Slightly lighter for cards
+
+// Neutral colors
+$neutral-100: #EAEFF8; // Soft white / very light gray
+$neutral-200: #D4DFEF;
+$neutral-300: #B7C5DB;
+$neutral-400: #98A8C5;
+$neutral-500: #7E91B0;
+$neutral-600: #5E719D;
+$neutral-700: #49587A;
+$neutral-800: #353F59;
+$neutral-900: #232A3B;
+
+// Success/Error/Warning colors
+$success: #4BCA7A; // Same as primary
+$success-light: #DAFBDF;
+
+$error: #FF7A93;
+$error-light: #FFE5EB;
+
+$warning: #FFCB6B;
+$warning-light: #FFF2DB;
+
+// UI Enhancement
+$glow-primary: rgba(75, 202, 122, 0.15);
+$glow-dark: rgba(11, 18, 32, 0.6);
+$overlay-dark: rgba(11, 18, 32, 0.8);
+
+// Export as CSS variables for use in component styles
+:root {
+  --color-primary: #{$primary};
+  --color-primary-light: #{$primary-light};
+  --color-primary-dark: #{$primary-dark};
+  
+  --color-secondary: #{$secondary};
+  --color-secondary-light: #{$secondary-light};
+  --color-secondary-dark: #{$secondary-dark};
+  
+  --color-bg-dark: #{$bg-dark};
+  --color-bg-darker: #{$bg-darker};
+  --color-bg-card: #{$bg-card};
+  
+  --color-neutral-100: #{$neutral-100};
+  --color-neutral-200: #{$neutral-200};
+  --color-neutral-300: #{$neutral-300};
+  --color-neutral-400: #{$neutral-400};
+  --color-neutral-500: #{$neutral-500};
+  --color-neutral-600: #{$neutral-600};
+  --color-neutral-700: #{$neutral-700};
+  --color-neutral-800: #{$neutral-800};
+  --color-neutral-900: #{$neutral-900};
+  
+  --color-success: #{$success};
+  --color-success-light: #{$success-light};
+  
+  --color-error: #{$error};
+  --color-error-light: #{$error-light};
+  
+  --color-warning: #{$warning};
+  --color-warning-light: #{$warning-light};
+  
+  --glow-primary: #{$glow-primary};
+  --glow-dark: #{$glow-dark};
+  --overlay-dark: #{$overlay-dark};
+} 

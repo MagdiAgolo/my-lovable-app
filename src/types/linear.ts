@@ -7,6 +7,7 @@ export interface LinearIssue {
   estimate?: number;
   createdAt: string;
   completedAt?: string;
+  updatedAt?: string;
   description?: string;
   priority?: number;
   identifier?: string;
@@ -22,6 +23,14 @@ export interface LinearIssue {
   };
   team: LinearTeam;
   cycle?: LinearCycle;
+  epic?: {
+    id: string;
+    name: string;
+  } | null;
+  parent?: {
+    id: string;
+    title: string;
+  } | null;
 }
 
 export interface TeamMetrics {

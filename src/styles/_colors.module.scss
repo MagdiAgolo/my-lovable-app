@@ -1,0 +1,111 @@
+@import './_colors.scss';
+
+.primary {
+  color: $primary;
+}
+
+.primaryLight {
+  color: $primary-light;
+}
+
+.primaryDark {
+  color: $primary-dark;
+}
+
+.secondary {
+  color: $secondary;
+}
+
+.secondaryLight {
+  color: $secondary-light;
+}
+
+.secondaryDark {
+  color: $secondary-dark;
+}
+
+.bgPrimary {
+  background-color: $primary;
+}
+
+.bgPrimaryLight {
+  background-color: $primary-light;
+}
+
+.bgSecondary {
+  background-color: $secondary;
+}
+
+.bgNeutral100 {
+  background-color: $neutral-100;
+}
+
+.bgNeutral200 {
+  background-color: $neutral-200;
+}
+
+.bgNeutral300 {
+  background-color: $neutral-300;
+}
+
+// Text colors
+.textPrimary {
+  color: $primary;
+}
+
+.textSecondary {
+  color: $secondary;
+}
+
+.textNeutral500 {
+  color: $neutral-500;
+}
+
+.textNeutral600 {
+  color: $neutral-600;
+}
+
+.textNeutral700 {
+  color: $neutral-700;
+}
+
+.textNeutral900 {
+  color: $neutral-900;
+}
+
+// Success/Error/Warning
+.success {
+  color: $success;
+}
+
+.error {
+  color: $error;
+}
+
+.warning {
+  color: $warning;
+}
+
+.bgSuccess {
+  background-color: $success;
+}
+
+.bgSuccessLight {
+  background-color: $success-light;
+}
+
+.bgError {
+  background-color: $error;
+}
+
+.bgErrorLight {
+  background-color: $error-light;
+}
+
+.bgWarning {
+  background-color: $warning;
+}
+
+.bgWarningLight {
+  background-color: $warning-light;
+} 

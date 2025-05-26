@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import '../../styles/_colors.scss';
 
 interface DashboardHeaderProps {
   title: string;
@@ -10,19 +11,33 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitle, onRefresh }) => {
   return (
-    <div className="dashboard-header">
+    <div className="dashboard-header flex justify-between items-center w-full mb-4">
       <div>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
+        <h1 style={{ 
+          color: 'var(--color-neutral-100)',
+          fontSize: '2.25rem',
+          fontWeight: '700',
+          margin: '0 0 0.25rem 0',
+          letterSpacing: '-0.04em'
+        }}>
+          {title}
+        </h1>
+        <p style={{ 
+          color: 'var(--color-neutral-300)',
+          fontSize: '0.875rem',
+          margin: '0',
+          letterSpacing: '0.02em'
+        }}>
+          {subtitle}
+        </p>
       </div>
       {onRefresh && (
         <Button
           onClick={onRefresh}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1"
+          size="xs"
+          className="implicit-btn black"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className="h-2.5 w-2.5 mr-1" />
           Refresh
         </Button>
       )}

@@ -58,17 +58,15 @@ export const TeamSelectionPanel: React.FC<TeamSelectionPanelProps> = ({
         
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            size="sm"
+            size="xs"
             onClick={onRefresh}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 implicit-btn black"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-2.5 w-2.5" />
             <span>{TEXT.refreshData}</span>
           </Button>
           
           <Button
-            variant="outline"
             size="sm"
             onClick={onConfigClick}
             className="flex items-center gap-1"
