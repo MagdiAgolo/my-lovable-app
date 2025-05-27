@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, PlusCircle, Calendar, LineChart, RefreshCw, Settings, GitBranch, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, PlusCircle, LineChart, RefreshCw, Settings, GitBranch, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VelocityTable from './VelocityTable';
 import { DashboardHeader } from './DashboardHeader';
@@ -9,11 +9,9 @@ import { FlowBoard } from './FlowBoard';
 import { BacklogHealthMonitor } from './BacklogHealthMonitor';
 
 const TEXT = {
-  title: 'Agile Metrics',
-  velocityChart: 'Velocity Chart',
+  velocityChart: 'Velocity History',
   velocityTrends: 'Velocity Trends',
   scopeCreep: 'Scope Creep',
-  sprintComparison: 'Sprint Comparison',
   flowBoard: 'Flow Board',
   backlogHealth: 'Backlog Health Monitor',
   settings: 'API Config'
@@ -40,7 +38,7 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
   teamName,
   onApiConfigClick
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'chart' | 'trends' | 'scopeCreep' | 'comparison'>('chart');
+  const [activeSubTab, setActiveSubTab] = useState<'chart' | 'trends' | 'scopeCreep'>('chart');
   const [showFlowBoard, setShowFlowBoard] = useState(false);
   const [showBacklogHealth, setShowBacklogHealth] = useState(false);
 
@@ -59,11 +57,6 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
       id: 'scopeCreep',
       label: TEXT.scopeCreep,
       icon: PlusCircle
-    },
-    {
-      id: 'comparison',
-      label: TEXT.sprintComparison,
-      icon: Calendar
     }
   ];
 
@@ -81,7 +74,7 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
     setActiveSubTab('chart'); // Reset sub tab
   };
 
-  const handleSubTabClick = (tabId: 'chart' | 'trends' | 'scopeCreep' | 'comparison') => {
+  const handleSubTabClick = (tabId: 'chart' | 'trends' | 'scopeCreep') => {
     setActiveSubTab(tabId);
     setShowFlowBoard(false);
     setShowBacklogHealth(false);
@@ -91,14 +84,7 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
     <div className="app-container">
       {/* Left Sidebar */}
       <div className="sidebar-fixed">
-        <div className="px-6 py-6">
-          <h2 className="text-xl font-bold flex items-center">
-            <LineChart className="mr-3 h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-            {TEXT.title}
-          </h2>
-        </div>
-        
-        <nav className="px-4 mt-4">
+        <nav className="px-4 mt-8">
           <ul className="space-y-2">
             {navItems.map(item => (
               <li key={item.id}>
@@ -112,7 +98,6 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
                     color: activeSubTab === item.id && !showFlowBoard && !showBacklogHealth ? 'var(--color-primary)' : 'var(--color-neutral-300)'
                   }}
                 >
-                  <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>
                 </button>
               </li>
@@ -130,7 +115,6 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
                   color: showFlowBoard ? 'var(--color-primary)' : 'var(--color-neutral-300)'
                 }}
               >
-                <GitBranch className="h-4 w-4" />
                 <span>{TEXT.flowBoard}</span>
               </button>
             </li>
@@ -148,7 +132,6 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
                   whiteSpace: 'nowrap'
                 }}
               >
-                <Activity className="h-4 w-4" />
                 <span>{TEXT.backlogHealth}</span>
               </button>
             </li>
@@ -165,7 +148,6 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
                   color: 'var(--color-neutral-300)'
                 }}
               >
-                <Settings className="h-4 w-4" />
                 <span>{TEXT.settings}</span>
               </button>
             </li>
@@ -175,7 +157,7 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
       
       {/* Right Content */}
       <div className="main-content grid-pattern">
-        <div className="p-8 space-y-6">
+        <div className="px-8 pt-6 pb-8 space-y-6">
           <div className="flex justify-between items-center">
             <DashboardHeader 
               title={`${teamName} ${showFlowBoard ? 'Flow Board' : showBacklogHealth ? 'Backlog Health' : 'Performance'}`}
@@ -184,14 +166,18 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
                   ? "Visualize your team's workflow" 
                   : showBacklogHealth 
                     ? "Monitor the health of your team's backlog"
-                    : "Monitor your team's performance metrics from Linear"
+                    : activeSubTab === 'chart'
+                      ? "Track historical velocity and completed story points across sprints"
+                      : activeSubTab === 'trends'
+                        ? "Analyze velocity patterns and predict future sprint performance"
+                        : "Identify scope changes and measure work added mid-sprint"
               } 
               onRefresh={onRefresh}
             />
           </div>
           
           {/* Team Selection */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2">
             {filteredTeams?.map((team) => (
               <button
                 key={team.id}

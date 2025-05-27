@@ -11,14 +11,15 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitle, onRefresh }) => {
   return (
-    <div className="dashboard-header flex justify-between items-center w-full mb-4">
+    <div className="dashboard-header flex justify-between items-center w-full py-2">
       <div>
         <h1 style={{ 
           color: 'var(--color-neutral-100)',
           fontSize: '2.25rem',
           fontWeight: '700',
-          margin: '0 0 0.25rem 0',
-          letterSpacing: '-0.04em'
+          margin: '0 0 0.5rem 0',
+          letterSpacing: '-0.04em',
+          lineHeight: 1.2
         }}>
           {title}
         </h1>

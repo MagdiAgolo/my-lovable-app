@@ -436,6 +436,53 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
   
   const chartData = prepareChartData();
 
+  // Calculate the predicted velocity for the next sprint
+  const calculatePredictedVelocity = () => {
+    if (chartData.length === 0) return null;
+    
+    // Sort chart data chronologically to get recent sprints
+    const sortedData = [...chartData].sort((a, b) => {
+      const cycleA = cycles?.find(c => c.id === a.cycleId);
+      const cycleB = cycles?.find(c => c.id === b.cycleId);
+      
+      if (cycleA?.startsAt && cycleB?.startsAt) {
+        return new Date(cycleB.startsAt).getTime() - new Date(cycleA.startsAt).getTime();
+      }
+      
+      return 0;
+    });
+    
+    // Use the last 3 sprints for prediction if available
+    const recentSprints = sortedData.slice(0, Math.min(3, sortedData.length));
+    
+    if (recentSprints.length === 0) return null;
+    
+    // Calculate weighted average (more recent sprints have higher weight)
+    const weights = [0.5, 0.3, 0.2]; // 50% last sprint, 30% second-last, 20% third-last
+    let predictedValue = 0;
+    let totalWeight = 0;
+    
+    recentSprints.forEach((sprint, index) => {
+      if (index < weights.length) {
+        predictedValue += sprint.velocity * weights[index];
+        totalWeight += weights[index];
+      }
+    });
+    
+    // Adjust weight if we have fewer than 3 sprints
+    if (totalWeight > 0) {
+      predictedValue = predictedValue / totalWeight;
+    } else {
+      // Fallback to simple average if weights are not applicable
+      predictedValue = recentSprints.reduce((sum, sprint) => sum + sprint.velocity, 0) / recentSprints.length;
+    }
+    
+    // Round to one decimal place
+    return Math.round(predictedValue * 10) / 10;
+  };
+
+  const predictedVelocity = calculatePredictedVelocity();
+
   if (isLoading) {
     return <div className="p-6">Loading sprint history data...</div>;
   }
@@ -540,7 +587,7 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
                 
                 {/* Sprint Velocity Chart */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-4">Velocity Trend Chart (Completed Sprints Only)</h4>
+                  <h4 className="text-sm font-semibold text-gray-600 mb-4">Historical sprint performance data showing completed story points across all sprints</h4>
                 </div>
                 
                 {/* Fixed size container with border for visibility */}
@@ -626,43 +673,272 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
                 <p className="text-gray-500 mb-2">No trend data available</p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <table className="w-full border-collapse">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sprint</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Velocity</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {chartData.slice(0, 10).map((cycle, index) => {
-                      const previous = index < chartData.length - 1 ? chartData[index + 1].velocity : cycle.velocity;
-                      const change = cycle.velocity - previous;
-                      // Extract sprint number
-                      const matches = cycle.name.match(/\d+/);
-                      const sprintNumber = matches && matches.length > 0 ? matches[0] : '';
-                      
-                      return (
-                        <tr 
-                          key={cycle.cycleId} 
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => showSprintDetails(cycle.cycleId)}
-                        >
+              <>
+                {/* Velocity Trends Line Graph */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-600 mb-4">Visualizes velocity patterns over time with prediction for the next sprint based on historical data</h4>
+                </div>
+                
+                <div className="border border-gray-200 rounded-lg p-4 mb-6" style={{ height: '450px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={[
+                        ...[...chartData]
+                          .sort((a, b) => {
+                            // Sort by start date if available
+                            const cycleA = cycles?.find(c => c.id === a.cycleId);
+                            const cycleB = cycles?.find(c => c.id === b.cycleId);
+                            
+                            if (cycleA?.startsAt && cycleB?.startsAt) {
+                              return new Date(cycleA.startsAt).getTime() - new Date(cycleB.startsAt).getTime();
+                            }
+                            
+                            // Fallback to sprint name
+                            return a.name.localeCompare(b.name);
+                          })
+                          .map(item => ({
+                            name: item.name,
+                            velocity: item.velocity,
+                            cycleId: item.cycleId,
+                            isPredicted: false
+                          })),
+                        // Add predicted data point if available
+                        ...(predictedVelocity ? [{
+                          name: "Next Sprint (Predicted)",
+                          velocity: 0, // Actual value will be shown in the predictedVelocity line
+                          predictedVelocity: predictedVelocity,
+                          cycleId: "predicted",
+                          isPredicted: true
+                        }] : [])
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      onClick={(data) => {
+                        if (data && data.activePayload && data.activePayload[0]) {
+                          const clickedData = data.activePayload[0].payload;
+                          // Only navigate to real sprints, not the predicted one
+                          if (clickedData.cycleId !== "predicted") {
+                            showSprintDetails(clickedData.cycleId);
+                          }
+                        }
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="name" 
+                        height={60}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => {
+                          // Special formatting for predicted sprint
+                          if (value === "Next Sprint (Predicted)") {
+                            return "Predicted";
+                          }
+                          const matches = value.match(/\d+/);
+                          if (matches && matches.length > 0) {
+                            return `Sprint ${matches[0]}`;
+                          }
+                          return value.split(' ').slice(0, 1).join(' ');
+                        }}
+                        label={{ value: 'Sprint Number', position: 'bottom', offset: 20 }}
+                      />
+                      <YAxis 
+                        label={{ value: 'Velocity (points)', angle: -90, position: 'insideLeft' }}
+                      />
+                      <Tooltip 
+                        formatter={(value, name, props) => {
+                          // Check if this is the predicted data point
+                          if (props.payload.isPredicted && name === "velocity") {
+                            return ["Not available", "Actual Velocity"];
+                          } else if (name === "predictedVelocity") {
+                            return [`${value} points`, "Predicted Velocity"];
+                          }
+                          return [`${Number(value).toFixed(1)} points`, "Velocity"];
+                        }}
+                        labelFormatter={(value) => {
+                          if (value === "Next Sprint (Predicted)") {
+                            return "Next Sprint (Predicted)";
+                          }
+                          return `Sprint: ${value}`;
+                        }}
+                      />
+                      {/* Actual velocity line */}
+                      <Line 
+                        type="monotone" 
+                        dataKey="velocity" 
+                        name="Velocity"
+                        stroke="var(--chart-primary)" 
+                        activeDot={{ 
+                          r: 8, 
+                          onClick: (data: any) => {
+                            if (data && data.payload && data.payload.cycleId && data.payload.cycleId !== "predicted") {
+                              showSprintDetails(data.payload.cycleId);
+                            }
+                          } 
+                        }}
+                        strokeWidth={2}
+                        className="cursor-pointer"
+                        connectNulls={false}
+                      />
+                      {/* Predicted velocity line */}
+                      <Line 
+                        type="monotone" 
+                        dataKey="predictedVelocity" 
+                        name="Predicted Velocity"
+                        stroke="#f59e0b" // amber color for prediction
+                        strokeDasharray="5 5" // dashed line
+                        dot={{ 
+                          r: 6, 
+                          fill: "#f59e0b", 
+                          stroke: "#f59e0b" 
+                        }}
+                        activeDot={{ r: 8, fill: "#f59e0b", stroke: "#f59e0b" }}
+                        isAnimationActive={true}
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
+                  <table className="w-full border-collapse">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sprint</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Velocity</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {/* Add predicted sprint at the top of the table */}
+                      {predictedVelocity && (
+                        <tr className="bg-amber-50">
                           <td className="px-4 py-3">
-                            <span className="font-medium text-primary hover:underline">Sprint {sprintNumber}</span>
-                            <span className="text-xs text-gray-500 ml-2">({cycle.name})</span>
+                            <span className="font-medium text-amber-600">Next Sprint</span>
+                            <span className="text-xs text-amber-500 ml-2">(Predicted)</span>
                           </td>
-                          <td className="px-4 py-3 text-right">{cycle.velocity}</td>
-                          <td className={`px-4 py-3 text-right ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                            {change !== 0 ? (change > 0 ? '+' : '') + change : '-'}
+                          <td className="px-4 py-3 text-right text-amber-600 font-medium">{predictedVelocity}</td>
+                          <td className="px-4 py-3 text-right">
+                            {chartData.length > 0 && (
+                              <span className={`${
+                                predictedVelocity > chartData[0].velocity 
+                                  ? 'text-green-600' 
+                                  : predictedVelocity < chartData[0].velocity 
+                                    ? 'text-red-600' 
+                                    : 'text-gray-500'
+                              }`}>
+                                {predictedVelocity !== chartData[0].velocity 
+                                  ? (predictedVelocity > chartData[0].velocity ? '+' : '') + 
+                                    (predictedVelocity - chartData[0].velocity).toFixed(1)
+                                  : '-'}
+                              </span>
+                            )}
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                      
+                      {/* Existing sprints */}
+                      {chartData.slice(0, 10).map((cycle, index) => {
+                        const previous = index < chartData.length - 1 ? chartData[index + 1].velocity : cycle.velocity;
+                        const change = cycle.velocity - previous;
+                        // Extract sprint number
+                        const matches = cycle.name.match(/\d+/);
+                        const sprintNumber = matches && matches.length > 0 ? matches[0] : '';
+                        
+                        return (
+                          <tr 
+                            key={cycle.cycleId} 
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onClick={() => showSprintDetails(cycle.cycleId)}
+                          >
+                            <td className="px-4 py-3">
+                              <span className="font-medium text-primary hover:underline">Sprint {sprintNumber}</span>
+                              <span className="text-xs text-gray-500 ml-2">({cycle.name})</span>
+                            </td>
+                            <td className="px-4 py-3 text-right">{cycle.velocity}</td>
+                            <td className={`px-4 py-3 text-right ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                              {change !== 0 ? (change > 0 ? '+' : '') + change : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Sprint Comparison (moved from the separate tab) */}
+                <div className="border-t border-gray-200 pt-6 mt-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <Calendar className="w-5 h-5 mr-2 text-primary" />
+                    Sprint Comparison
+                  </h3>
+                  
+                  {chartData.length < 2 ? (
+                    <div className="h-40 w-full flex flex-col items-center justify-center bg-gray-50 rounded-lg border border-gray-100">
+                      <p className="text-gray-500 mb-2">Need at least 2 sprints for comparison</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-500 mb-1">Average Velocity</p>
+                          <p className="text-xl font-semibold">
+                            {(chartData.reduce((sum, cycle) => sum + cycle.velocity, 0) / chartData.length).toFixed(1)}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-500 mb-1">High</p>
+                          <p className="text-xl font-semibold text-green-600">
+                            {Math.max(...chartData.map(cycle => cycle.velocity))}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-500 mb-1">Low</p>
+                          <p className="text-xl font-semibold text-red-600">
+                            {Math.min(...chartData.map(cycle => cycle.velocity))}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="overflow-hidden rounded-lg border border-gray-200">
+                        <table className="w-full border-collapse">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sprint</th>
+                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Velocity</th>
+                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Vs. Avg</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {chartData.slice(0, 5).map((cycle) => {
+                              const average = chartData.reduce((sum, c) => sum + c.velocity, 0) / chartData.length;
+                              const diff = cycle.velocity - average;
+                              // Extract sprint number
+                              const matches = cycle.name.match(/\d+/);
+                              const sprintNumber = matches && matches.length > 0 ? matches[0] : '';
+                              
+                              return (
+                                <tr 
+                                  key={cycle.cycleId} 
+                                  className="hover:bg-gray-50 cursor-pointer"
+                                  onClick={() => showSprintDetails(cycle.cycleId)}
+                                >
+                                  <td className="px-4 py-3">
+                                    <span className="font-medium text-primary hover:underline">Sprint {sprintNumber}</span>
+                                    <span className="text-xs text-gray-500 ml-2">({cycle.name})</span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">{cycle.velocity}</td>
+                                  <td className={`px-4 py-3 text-center ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                                    {diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(1) : '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         );
@@ -685,7 +961,7 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
                 
                 {/* Scope Creep Trend Chart - now takes full space */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-4">Scope Creep Trend Across Sprints - Click on a sprint to view details</h4>
+                  <h4 className="text-sm font-semibold text-gray-600 mb-4">Measures how much work was added to sprints after they started, with guidelines for acceptable levels</h4>
                 </div>
                 
                 <div className="border border-gray-200 rounded-lg p-4 mb-4" style={{ height: '450px', width: '100%' }}>
@@ -751,84 +1027,7 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
                 </div>
                 
                 <div className="text-center mt-4 text-sm text-gray-600">
-                  <p>Click on any data point to view detailed sprint information</p>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      
-      case 'comparison':
-        return (
-          <div className="implicit-card">
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-primary" />
-              Sprint Comparison
-            </h3>
-            
-            {chartData.length < 2 ? (
-              <div className="h-40 w-full flex flex-col items-center justify-center bg-gray-50 rounded-lg border border-gray-100">
-                <p className="text-gray-500 mb-2">Need at least 2 sprints for comparison</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 mb-1">Average Velocity</p>
-                    <p className="text-xl font-semibold">
-                      {(chartData.reduce((sum, cycle) => sum + cycle.velocity, 0) / chartData.length).toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 mb-1">High</p>
-                    <p className="text-xl font-semibold text-green-600">
-                      {Math.max(...chartData.map(cycle => cycle.velocity))}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 mb-1">Low</p>
-                    <p className="text-xl font-semibold text-red-600">
-                      {Math.min(...chartData.map(cycle => cycle.velocity))}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="overflow-hidden rounded-lg border border-gray-200">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sprint</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Velocity</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Vs. Avg</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {chartData.slice(0, 5).map((cycle) => {
-                        const average = chartData.reduce((sum, c) => sum + c.velocity, 0) / chartData.length;
-                        const diff = cycle.velocity - average;
-                        // Extract sprint number
-                        const matches = cycle.name.match(/\d+/);
-                        const sprintNumber = matches && matches.length > 0 ? matches[0] : '';
-                        
-                        return (
-                          <tr 
-                            key={cycle.cycleId} 
-                            className="hover:bg-gray-50 cursor-pointer"
-                            onClick={() => showSprintDetails(cycle.cycleId)}
-                          >
-                            <td className="px-4 py-3">
-                              <span className="font-medium text-primary hover:underline">Sprint {sprintNumber}</span>
-                              <span className="text-xs text-gray-500 ml-2">({cycle.name})</span>
-                            </td>
-                            <td className="px-4 py-3 text-center">{cycle.velocity}</td>
-                            <td className={`px-4 py-3 text-center ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                              {diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(1) : '-'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  <p>Clicking a point opens detailed breakdown of added issues and their impact on the sprint</p>
                 </div>
               </div>
             )}
@@ -844,9 +1043,9 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">
-          Agile Metrics: {activeSubTab === 'chart' ? 'Velocity Chart' : 
+          Agile Metrics: {activeSubTab === 'chart' ? 'Velocity History' : 
                           activeSubTab === 'trends' ? 'Velocity Trends' : 
-                          activeSubTab === 'scopeCreep' ? 'Scope Creep' : 'Sprint Comparison'}
+                          activeSubTab === 'scopeCreep' ? 'Scope Creep' : ''}
         </h2>
         <div className="flex space-x-2">
           {/* Refresh button removed */}

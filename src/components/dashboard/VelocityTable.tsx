@@ -105,8 +105,27 @@ export default function VelocityTable({
         setSelectedCycleId(cycles[0].id);
       }
     }
-  }, [teamId, cycles]); // Removed selectedCycleId from dependencies
-  
+  }, [teamId, cycles]);
+
+  // Display a message if no cycles are available
+  if (!isLoadingCycles && (!cycles || cycles.length === 0)) {
+    return (
+      <div className="p-6 text-center">
+        <h3 className="text-lg font-medium text-gray-300 mb-2">No Sprint Cycles Found</h3>
+        <p className="text-gray-400 mb-4">There are no sprint cycles available for this team.</p>
+        <div className="flex justify-center">
+          <button
+            onClick={onRefresh}
+            className="flex items-center px-3 py-2 bg-black text-green-400 hover:bg-gray-900 border border-primary rounded text-sm"
+          >
+            <RefreshCw className="w-3 h-3 mr-2" />
+            Refresh Data
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Add scope creep useEffect here - MOVED UP to avoid conditional execution
   useEffect(() => {
     if (!cycles || !issues) return;
@@ -461,10 +480,10 @@ export default function VelocityTable({
 
         {/* Main Content */}
         <div className="mb-6">
-          <div className="space-y-6">
+            <div className="space-y-6">
             {/* Render Sprint History Content based on the sidebar selection */}
             {renderSprintHistoryContent()}
-          </div>
+      </div>
         </div>
       </div>
 

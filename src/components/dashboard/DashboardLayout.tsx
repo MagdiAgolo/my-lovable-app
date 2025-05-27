@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import '../../styles/_colors.scss';
+import { Header } from '../layout/Header';
+import { useGoogleAuth } from '../../context/GoogleAuthContext';
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  const { user } = useGoogleAuth();
+
   return (
-    <div className="min-h-screen grid-pattern" style={{ 
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: 'var(--color-bg-dark)'
-    }}>
-      {children}
+    <div className="flex flex-col h-screen bg-gray-950 text-white">
+      <Header />
+      <main className="flex-1 overflow-auto" style={{ padding: 0, margin: 0 }}>
+        {children}
+      </main>
     </div>
   );
 }; 

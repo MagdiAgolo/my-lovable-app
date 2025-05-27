@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { 
   AlertCircle, PieChart, LineChart, ListFilter, RefreshCw, Calendar, 
   AlertTriangle, Clock, CheckCircle, Link2, AlertOctagon, 
-  UserX, FileWarning, ChevronDown, ChevronRight, ExternalLink 
+  UserX, FileWarning, ChevronDown, ChevronRight, ExternalLink,
+  Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, Pie } from 'recharts';
@@ -23,13 +24,15 @@ const TEXT = {
     orphaned: '🔗 Orphaned issues',
     stalled: '🛑 Stalled tickets',
     unassigned: '🙅 Unassigned stories',
-    inconsistent: '⚠️ Inconsistent status fields'
+    inconsistent: '⚠️ Inconsistent status fields',
+    noProject: '📁 No Project Issues'
   },
   descriptions: {
     orphaned: 'Issues not linked to an Epic',
     stalled: 'Issues inactive for too long (>21 days)',
     unassigned: 'Issues with no assignee',
-    inconsistent: 'Issues with status mismatch (e.g., closed but not marked Done)'
+    inconsistent: 'Issues with status mismatch (e.g., closed but not marked Done)',
+    noProject: 'Issues not associated with any project'
   },
   labels: {
     loading: 'Loading backlog data...',
@@ -63,6 +66,7 @@ const TEXT = {
     stateVsCompletion: 'State vs Completion mismatch',
     showAll: 'Show all',
     hideAll: 'Hide all',
+    noProject: 'No project assigned',
     healthScores: {
       excellent: 'Excellent',
       good: 'Good',
@@ -104,6 +108,7 @@ interface IssuesByHealth {
   stalled: LinearIssue[];
   unassigned: LinearIssue[];
   inconsistent: LinearIssue[];
+  noProject: LinearIssue[];
 }
 
 const DEFAULT_METRICS: BacklogMetrics = {
@@ -138,13 +143,15 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
     orphaned: [],
     stalled: [],
     unassigned: [],
-    inconsistent: []
+    inconsistent: [],
+    noProject: []
   });
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     orphaned: true,
     stalled: true,
     unassigned: true,
-    inconsistent: true
+    inconsistent: true,
+    noProject: true
   });
 
   // Fetch backlog issues when teamId changes
@@ -292,7 +299,8 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
         orphaned: [],
         stalled: [],
         unassigned: [],
-        inconsistent: []
+        inconsistent: [],
+        noProject: []
       });
       return;
     }
@@ -344,11 +352,25 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
       return isDoneWithoutCompletionDate || isNotDoneWithCompletionDate;
     });
 
+    // 5. Find issues without projects
+    // Since there's no direct project field, we'll define issues without projects as:
+    // - Active issues (not completed or canceled)
+    // - Not in an epic (which would indicate it's part of a larger initiative)
+    // - Not in a cycle (sprints are often tied to projects)
+    const noProjectIssues = issues.filter(issue => {
+      const isActive = issue.state?.type !== 'completed' && issue.state?.type !== 'canceled';
+      const hasNoEpic = !issue.epic;
+      const hasNoCycle = !issue.cycle;
+      
+      return isActive && hasNoEpic && hasNoCycle;
+    });
+
     setHealthIssues({
       orphaned: orphanedIssues,
       stalled: stalledIssues,
       unassigned: unassignedIssues,
-      inconsistent: inconsistentIssues
+      inconsistent: inconsistentIssues,
+      noProject: noProjectIssues
     });
   };
 
@@ -416,7 +438,8 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
       orphaned: expanded,
       stalled: expanded,
       unassigned: expanded,
-      inconsistent: expanded
+      inconsistent: expanded,
+      noProject: expanded
     });
   };
 
@@ -553,10 +576,10 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
           <Button
             size="sm"
             onClick={fetchBacklogData}
-            className="flex items-center gap-1.5"
+            className="implicit-btn black"
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             {TEXT.labels.refresh}
           </Button>
         </div>
@@ -585,18 +608,16 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
         <h3 className="text-lg font-semibold">Issue Health Analysis</h3>
         <div className="flex gap-2">
           <Button 
-            variant="outline" 
             size="sm"
             onClick={() => toggleAllSections(true)}
-            className="text-xs"
+            className="implicit-btn black"
           >
             {TEXT.labels.showAll}
           </Button>
           <Button 
-            variant="outline" 
             size="sm"
             onClick={() => toggleAllSections(false)}
-            className="text-xs"
+            className="implicit-btn black"
           >
             {TEXT.labels.hideAll}
           </Button>
@@ -604,7 +625,7 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
       </div>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 shadow-sm">
           <div className="flex items-center mb-2">
             <Link2 className="h-5 w-5 mr-2 text-blue-500" />
@@ -635,6 +656,14 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
             <h3 className="font-semibold text-white">Inconsistent Status</h3>
           </div>
           <p className="text-3xl font-bold text-white">{healthIssues.inconsistent.length}</p>
+        </div>
+        
+        <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 shadow-sm">
+          <div className="flex items-center mb-2">
+            <Briefcase className="h-5 w-5 mr-2 text-green-500" />
+            <h3 className="font-semibold text-white">No Project</h3>
+          </div>
+          <p className="text-3xl font-bold text-white">{healthIssues.noProject.length}</p>
         </div>
       </div>
       
@@ -672,6 +701,15 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
         healthIssues.inconsistent,
         <FileWarning className="h-5 w-5 text-yellow-500" />,
         'inconsistent'
+      )}
+      
+      {/* No Project Issues Section */}
+      {renderSection(
+        TEXT.issueCategories.noProject,
+        TEXT.descriptions.noProject,
+        healthIssues.noProject,
+        <Briefcase className="h-5 w-5 text-green-500" />,
+        'noProject'
       )}
     </div>
   );

@@ -712,10 +712,10 @@ export const linearService = {
 
   // Fetch all cycles/sprints with enhanced New Architecture team support
   async getTeamCycles(teamId: string): Promise<LinearCycle[]> {
-    // Validate teamId early
+    // Validate teamId early but don't show a toast if it's just empty/null
+    // as this is likely during initial app loading
     if (!teamId) {
-      console.error("No teamId provided to getTeamCycles");
-      toast.error("No team selected. Please select a valid team.");
+      console.warn("No teamId provided to getTeamCycles");
       return [];
     }
 

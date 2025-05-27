@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, TrendingUp, PlusCircle, Calendar, LayoutDashboard, Users } from 'lucide-react';
+import { BarChart3, TrendingUp, PlusCircle, LayoutDashboard, Users } from 'lucide-react';
 
 interface NavigationProps {
   activeView: string;
@@ -9,10 +9,9 @@ interface NavigationProps {
 // Define the navigation items that will appear in the sidebar
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'velocityChart', label: 'Velocity Chart', icon: BarChart3 },
+  { id: 'velocityChart', label: 'Velocity History', icon: BarChart3 },
   { id: 'velocityTrends', label: 'Velocity Trends', icon: TrendingUp },
   { id: 'scopeCreep', label: 'Scope Creep', icon: PlusCircle },
-  { id: 'comparison', label: 'Sprint Comparison', icon: Calendar },
   { id: 'engineers', label: 'Engineer Performance', icon: Users }
 ];
 

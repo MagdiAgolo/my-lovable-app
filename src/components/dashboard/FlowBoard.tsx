@@ -348,7 +348,7 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ teamId }) => {
           size="sm" 
           variant="outline" 
           onClick={handleCancelWipConfig}
-          className="h-8 w-8 p-0 rounded-full"
+          className="implicit-btn black h-8 w-8 p-0 rounded-full"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -390,13 +390,13 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ teamId }) => {
         <Button 
           variant="outline" 
           onClick={handleCancelWipConfig}
-          className="px-4"
+          className="implicit-btn black px-4"
         >
           {TEXT.labels.cancel}
         </Button>
         <Button 
           onClick={handleSaveWipLimits}
-          className="px-4"
+          className="implicit-btn black px-4"
         >
           {TEXT.labels.apply}
         </Button>
@@ -454,7 +454,7 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ teamId }) => {
             size="sm"
             variant="outline"
             onClick={() => setShowWipConfig(!showWipConfig)}
-            className="flex items-center gap-1.5 px-3 py-2 h-auto"
+            className="implicit-btn black flex items-center gap-1.5 px-3 py-2 h-auto"
           >
             <Settings className="h-4 w-4" />
             {TEXT.labels.configure}
@@ -463,7 +463,7 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ teamId }) => {
           <Button
             size="sm"
             onClick={fetchIssues}
-            className="flex items-center gap-1.5 px-3 py-2 h-auto"
+            className="implicit-btn black flex items-center gap-1.5 px-3 py-2 h-auto"
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />

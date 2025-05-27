@@ -24,14 +24,15 @@ html, body {
   display: flex;
   height: 100vh;
   width: 100%;
+  padding-top: 60px;
 }
 
 .sidebar-fixed {
   position: fixed;
-  top: 0;
+  top: 60px;
   left: 0;
   bottom: 0;
-  width: 260px;
+  width: 280px;
   overflow-y: auto;
   z-index: 10;
   transition: transform 0.2s ease;
@@ -40,10 +41,12 @@ html, body {
 }
 
 .main-content {
-  margin-left: 260px;
+  margin-left: 280px;
   flex: 1;
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   overflow-x: hidden;
+  padding-top: 20px;
+  margin-top: 0;
 }
 
 // Button styles
@@ -128,11 +131,10 @@ button {
 .implicit-nav-item {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
   border-radius: 0.375rem;
   transition: all 0.2s ease;
-  font-size: 0.875rem;
-  gap: 0.5rem;
+  font-size: 1.18rem;
   white-space: nowrap;
   color: var(--color-neutral-300);
   font-weight: $font-weight-medium;
@@ -146,10 +148,12 @@ button {
     background-color: rgba(75, 202, 122, 0.12);
     color: var(--color-primary);
   }
-  
-  svg {
-    margin-right: 0.75rem;
-  }
+}
+
+.sidebar-fixed ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 // Common utility classes
@@ -196,4 +200,52 @@ button {
 .grid-pattern {
   background-image: linear-gradient(rgba(11, 18, 32, 0.9), rgba(11, 18, 32, 0.95)), 
     url("data:image/svg+xml,%3Csvg width='100%' height='100%' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='smallGrid' width='30' height='30' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 30 0 L 0 0 0 30' fill='none' stroke='rgba(234, 239, 248, 0.03)' stroke-width='0.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%' height='100%' fill='url(%23smallGrid)' /%3E%3C/svg%3E");
+  padding-top: 0;
+}
+
+// Header styles
+header {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+// User menu and login button styles
+.login-btn {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  padding: 0.35rem 0.7rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-primary) !important;
+  
+  &:hover {
+    background-color: rgba(20, 20, 20, 0.9) !important;
+    transform: translateY(-1px);
+    
+    span, svg {
+      color: var(--color-primary-light);
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    transform: none;
+    cursor: not-allowed;
+  }
+}
+
+// Remove old styles
+.implicit-btn.black.text-xs {
+  font-size: 0.65rem;
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
 } 
