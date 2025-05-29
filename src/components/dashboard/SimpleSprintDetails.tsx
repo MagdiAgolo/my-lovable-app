@@ -334,7 +334,16 @@ const SimpleSprintDetails: React.FC<SimpleSprintDetailsProps> = ({ cycleId, team
                 <tbody className="divide-y divide-gray-200">
                   {done.map(issue => (
                     <tr key={issue.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-sm text-blue-600">{issue.identifier}</td>
+                      <td className="px-4 py-3 font-mono text-sm text-blue-600">
+                        <a 
+                          href={`https://linear.app/implicit/issue/${issue.identifier || issue.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-800 hover:underline"
+                        >
+                          {issue.identifier}
+                        </a>
+                      </td>
                       <td className="px-4 py-3 text-sm">{issue.title}</td>
                       <td className="px-4 py-3 text-sm">{issue.assignee?.name || 'Unassigned'}</td>
                       <td className="px-4 py-3 text-right text-sm font-semibold">{issue.estimate || 0}</td>
@@ -367,7 +376,16 @@ const SimpleSprintDetails: React.FC<SimpleSprintDetailsProps> = ({ cycleId, team
                 <tbody className="divide-y divide-gray-200">
                   {inProgress.map(issue => (
                     <tr key={issue.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-sm text-blue-600">{issue.identifier}</td>
+                      <td className="px-4 py-3 font-mono text-sm text-blue-600">
+                        <a 
+                          href={`https://linear.app/implicit/issue/${issue.identifier || issue.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-800 hover:underline"
+                        >
+                          {issue.identifier}
+                        </a>
+                      </td>
                       <td className="px-4 py-3 text-sm">{issue.title}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
@@ -404,7 +422,16 @@ const SimpleSprintDetails: React.FC<SimpleSprintDetailsProps> = ({ cycleId, team
                 <tbody className="divide-y divide-gray-200">
                   {blocked.map(issue => (
                     <tr key={issue.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-sm text-blue-600">{issue.identifier}</td>
+                      <td className="px-4 py-3 font-mono text-sm text-blue-600">
+                        <a 
+                          href={`https://linear.app/implicit/issue/${issue.identifier || issue.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-800 hover:underline"
+                        >
+                          {issue.identifier}
+                        </a>
+                      </td>
                       <td className="px-4 py-3 text-sm">{issue.title}</td>
                       <td className="px-4 py-3 text-sm">{issue.assignee?.name || 'Unassigned'}</td>
                       <td className="px-4 py-3 text-right text-sm">{issue.estimate || 0}</td>
@@ -436,7 +463,16 @@ const SimpleSprintDetails: React.FC<SimpleSprintDetailsProps> = ({ cycleId, team
                 <tbody className="divide-y divide-gray-200">
                   {notStarted.map(issue => (
                     <tr key={issue.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-sm text-blue-600">{issue.identifier}</td>
+                      <td className="px-4 py-3 font-mono text-sm text-blue-600">
+                        <a 
+                          href={`https://linear.app/implicit/issue/${issue.identifier || issue.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-800 hover:underline"
+                        >
+                          {issue.identifier}
+                        </a>
+                      </td>
                       <td className="px-4 py-3 text-sm">{issue.title}</td>
                       <td className="px-4 py-3 text-sm">{issue.assignee?.name || 'Unassigned'}</td>
                       <td className="px-4 py-3 text-right text-sm">{issue.estimate || 0}</td>

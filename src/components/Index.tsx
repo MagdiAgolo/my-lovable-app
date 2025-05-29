@@ -180,17 +180,6 @@ const Index = () => {
   const loading = isLoadingTeams || teamsQuery.isLoading || metricsQuery.isLoading || issuesQuery.isLoading;
   const metrics = metricsQuery.data;
 
-  // If the API config is being shown, render only the config component
-  if (showApiConfig) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6 p-4 w-full">
-          <ApiKeyConfig onSuccessfulConnection={() => setShowApiConfig(false)} />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       {loading && !selectedTeamId ? (
@@ -209,7 +198,9 @@ const Index = () => {
           selectedCycleId={selectedCycleId}
           setSelectedCycleId={setSelectedCycleId}
           teamName={teamName}
+          showApiConfig={showApiConfig}
           onApiConfigClick={() => setShowApiConfig(true)}
+          onApiConfigClose={() => setShowApiConfig(false)}
         />
       ) : (
         <div className="flex items-center justify-center h-full">
@@ -219,7 +210,7 @@ const Index = () => {
               onClick={() => setShowApiConfig(true)}
               className="px-4 py-2 bg-primary text-black rounded hover:bg-primary-light"
             >
-              Configure API
+              Settings
             </button>
           </div>
         </div>

@@ -14,7 +14,7 @@ interface TeamSelectionPanelProps {
 
 const TEXT = {
   teamLabel: 'Team:',
-  apiConfig: 'API Config',
+  apiConfig: 'Settings',
   refreshData: 'Refresh Data'
 };
 

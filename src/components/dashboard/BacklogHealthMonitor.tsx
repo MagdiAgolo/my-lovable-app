@@ -462,7 +462,7 @@ export const BacklogHealthMonitor: React.FC<BacklogHealthMonitorProps> = ({ team
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400">{issue.identifier}</span>
                   <a 
-                    href={`https://linear.app/issue/${issue.identifier}`} 
+                    href={`https://linear.app/implicit/issue/${issue.identifier}`} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-xs text-blue-400 hover:text-blue-300 flex items-center"

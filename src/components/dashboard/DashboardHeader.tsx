@@ -14,7 +14,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitl
     <div className="dashboard-header flex justify-between items-center w-full py-2">
       <div>
         <h1 style={{ 
-          color: 'var(--color-neutral-100)',
+          color: 'var(--theme-header-color)',
           fontSize: '2.25rem',
           fontWeight: '700',
           margin: '0 0 0.5rem 0',
@@ -24,7 +24,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitl
           {title}
         </h1>
         <p style={{ 
-          color: 'var(--color-neutral-300)',
+          color: 'var(--theme-text-secondary)',
           fontSize: '0.875rem',
           margin: '0',
           letterSpacing: '0.02em'

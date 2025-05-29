@@ -1,0 +1,241 @@
+// Theme-specific CSS variables and styles
+@import './_colors.scss';
+
+// Light theme colors
+$light-primary: #2563eb; // Blue for light theme headers and menus
+$light-bg: #ffffff; // White background
+$light-bg-card: #f8fafc; // Light gray for cards
+$light-text: #1f2937; // Dark gray/black for text
+$light-text-muted: #6b7280; // Medium gray for muted text
+$light-border: #e5e7eb; // Light border
+$light-sidebar-bg: #f1f5f9; // Light sidebar
+
+// Dark theme (current styles)
+:root,
+[data-theme="dark"],
+.dark-theme {
+  --color-primary: #{$primary};
+  --color-primary-light: #{$primary-light};
+  --color-primary-dark: #{$primary-dark};
+  
+  --color-secondary: #{$secondary};
+  --color-secondary-light: #{$secondary-light};
+  --color-secondary-dark: #{$secondary-dark};
+  
+  --color-bg-dark: #{$bg-dark};
+  --color-bg-darker: #{$bg-darker};
+  --color-bg-card: #{$bg-card};
+  
+  --color-neutral-100: #{$neutral-100};
+  --color-neutral-200: #{$neutral-200};
+  --color-neutral-300: #{$neutral-300};
+  --color-neutral-400: #{$neutral-400};
+  --color-neutral-500: #{$neutral-500};
+  --color-neutral-600: #{$neutral-600};
+  --color-neutral-700: #{$neutral-700};
+  --color-neutral-800: #{$neutral-800};
+  --color-neutral-900: #{$neutral-900};
+  
+  --color-success: #{$success};
+  --color-success-light: #{$success-light};
+  
+  --color-error: #{$error};
+  --color-error-light: #{$error-light};
+  
+  --color-warning: #{$warning};
+  --color-warning-light: #{$warning-light};
+  
+  --glow-primary: #{$glow-primary};
+  --glow-dark: #{$glow-dark};
+  --overlay-dark: #{$overlay-dark};
+
+  // Theme-specific variables
+  --theme-text-primary: var(--color-neutral-100);
+  --theme-text-secondary: var(--color-neutral-300);
+  --theme-bg-primary: var(--color-bg-dark);
+  --theme-bg-secondary: var(--color-bg-darker);
+  --theme-bg-card: var(--color-bg-card);
+  --theme-border: rgba(234, 239, 248, 0.05);
+  --theme-header-color: var(--color-neutral-100);
+  --theme-menu-color: var(--color-primary);
+}
+
+// Light theme
+[data-theme="light"],
+.light-theme {
+  --color-primary: #{$light-primary};
+  --color-primary-light: #{lighten($light-primary, 10%)};
+  --color-primary-dark: #{darken($light-primary, 10%)};
+  
+  --color-secondary: #{$light-text};
+  --color-secondary-light: #{lighten($light-text, 20%)};
+  --color-secondary-dark: #{darken($light-text, 10%)};
+  
+  --color-bg-dark: #{$light-bg};
+  --color-bg-darker: #{$light-sidebar-bg};
+  --color-bg-card: #{$light-bg-card};
+  
+  --color-neutral-100: #{$light-text};
+  --color-neutral-200: #{lighten($light-text, 10%)};
+  --color-neutral-300: #{$light-text-muted};
+  --color-neutral-400: #{lighten($light-text-muted, 10%)};
+  --color-neutral-500: #{lighten($light-text-muted, 20%)};
+  --color-neutral-600: #{lighten($light-text-muted, 30%)};
+  --color-neutral-700: #{lighten($light-text-muted, 40%)};
+  --color-neutral-800: #{lighten($light-text-muted, 50%)};
+  --color-neutral-900: #{lighten($light-text-muted, 60%)};
+  
+  --color-success: #{$success};
+  --color-success-light: #{$success-light};
+  
+  --color-error: #{$error};
+  --color-error-light: #{$error-light};
+  
+  --color-warning: #{$warning};
+  --color-warning-light: #{$warning-light};
+  
+  --glow-primary: rgba(37, 99, 235, 0.15);
+  --glow-dark: rgba(255, 255, 255, 0.1);
+  --overlay-dark: rgba(255, 255, 255, 0.8);
+
+  // Theme-specific variables for light mode
+  --theme-text-primary: #{$light-text};
+  --theme-text-secondary: #{$light-text-muted};
+  --theme-bg-primary: #{$light-bg};
+  --theme-bg-secondary: #{$light-sidebar-bg};
+  --theme-bg-card: #{$light-bg-card};
+  --theme-border: #{$light-border};
+  --theme-header-color: #{$light-primary};
+  --theme-menu-color: #{$light-primary};
+}
+
+// Body theme styles
+.dark-theme {
+  background-color: var(--color-bg-dark);
+  color: var(--theme-text-primary);
+}
+
+.light-theme {
+  background-color: var(--theme-bg-primary);
+  color: var(--theme-text-primary);
+}
+
+// Theme selector styles
+.theme-selector-container {
+  margin-bottom: 2rem;
+}
+
+.theme-selector-label {
+  display: block;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--theme-text-primary);
+}
+
+.theme-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.theme-option {
+  position: relative;
+  cursor: pointer;
+  flex: 1;
+  min-width: 120px;
+}
+
+.theme-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.theme-option-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--theme-border);
+  border-radius: 8px;
+  background-color: var(--theme-bg-card);
+  transition: all 0.2s ease;
+  color: var(--theme-text-secondary);
+}
+
+.theme-option:hover .theme-option-content {
+  border-color: var(--color-primary);
+  background-color: var(--theme-bg-secondary);
+}
+
+.theme-radio:checked + .theme-option-content {
+  border-color: var(--color-primary);
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--color-primary);
+}
+
+.theme-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.theme-text {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+// Light theme specific adjustments
+.light-theme {
+  .implicit-card {
+    background-color: var(--theme-bg-card);
+    border: 1px solid var(--theme-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-fixed {
+    background-color: var(--theme-bg-secondary);
+    border-right: 1px solid var(--theme-border);
+  }
+
+  .implicit-nav-item {
+    color: var(--theme-text-secondary);
+    
+    &:hover {
+      background-color: rgba(37, 99, 235, 0.08);
+      color: var(--theme-text-primary);
+    }
+    
+    &.active {
+      background-color: rgba(37, 99, 235, 0.12);
+      color: var(--color-primary);
+    }
+  }
+
+  .grid-pattern {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.95)), 
+      url("data:image/svg+xml,%3Csvg width='100%' height='100%' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='lightGrid' width='30' height='30' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 30 0 L 0 0 0 30' fill='none' stroke='rgba(0, 0, 0, 0.03)' stroke-width='0.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%' height='100%' fill='url(%23lightGrid)' /%3E%3C/svg%3E");
+  }
+
+  // Header styles for light theme
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--theme-header-color);
+  }
+
+  // Paragraph and text styles
+  p {
+    color: var(--theme-text-secondary);
+  }
+}
+
+// Update for light theme
+.light-theme .theme-radio:checked + .theme-option-content {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+// Update for dark theme  
+.dark-theme .theme-radio:checked + .theme-option-content {
+  background-color: rgba(75, 202, 122, 0.1);
+} 

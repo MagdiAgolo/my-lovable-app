@@ -172,7 +172,14 @@ const SimpleSprintIssues: React.FC<SimpleSprintIssuesProps> = ({ teamId }) => {
                   {doneIssuesList.map(issue => (
                     <div key={issue.id} className="flex justify-between items-center text-sm">
                       <span>
-                        <span className="font-mono text-blue-600">{issue.identifier}</span>
+                        <a 
+                          href={`https://linear.app/implicit/issue/${issue.identifier || issue.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {issue.identifier}
+                        </a>
                         <span className="ml-2">{issue.title}</span>
                       </span>
                       <div className="flex items-center space-x-2">
@@ -201,16 +208,25 @@ const SimpleSprintIssues: React.FC<SimpleSprintIssuesProps> = ({ teamId }) => {
                   {issues
                     .filter(issue => !linearService.isIssueCompleted(issue))
                     .map(issue => (
-                      <div key={issue.id} className="flex justify-between items-center text-sm text-gray-600">
+                      <div key={issue.id} className="flex justify-between items-center text-sm">
                         <span>
-                          <span className="font-mono">{issue.identifier}</span>
+                          <a 
+                            href={`https://linear.app/implicit/issue/${issue.identifier || issue.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono hover:text-blue-600 hover:underline"
+                          >
+                            {issue.identifier}
+                          </a>
                           <span className="ml-2">{issue.title}</span>
                         </span>
                         <div className="flex items-center space-x-2">
-                          <span className="px-2 py-1 bg-yellow-100 rounded text-xs">
+                          <span className="px-2 py-1 bg-gray-100 rounded text-xs">
                             {issue.state?.name}
                           </span>
-                          <span>{issue.estimate || 0} pts</span>
+                          <span className="font-semibold">
+                            {issue.estimate || 0} pts
+                          </span>
                         </div>
                       </div>
                     ))}

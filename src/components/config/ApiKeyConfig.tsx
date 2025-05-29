@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { linearService } from '@/services/linearService';
 import { setLinearApiKey } from '@/config/api-config';
 import { toast } from '@/components/ui/sonner';
+import { ThemeSelector } from './ThemeSelector';
 
 interface ApiKeyConfigProps {
   onSuccessfulConnection: () => void;
@@ -53,40 +54,46 @@ export const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ onSuccessfulConnecti
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Linear API Key</CardTitle>
-        <CardDescription>
-          Enter your Linear API key to connect your account. You can find your API key in your Linear settings.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your Linear API key"
-              className={`w-full p-2 border rounded ${error ? 'border-red-500' : ''}`}
-              required
-            />
-            {error && (
-              <p className="mt-2 text-sm text-red-500">{error}</p>
-            )}
-            <p className="mt-2 text-sm text-muted-foreground">
-              You can find your API key in your Linear settings under API.
-            </p>
-          </div>
-          <Button 
-            type="submit" 
-            disabled={isLoading || !apiKey.trim()}
-            className="w-full"
-          >
-            {isLoading ? 'Connecting...' : 'Connect'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      {/* Theme Selector */}
+      <ThemeSelector />
+      
+      {/* API Key Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Linear API Key</CardTitle>
+          <CardDescription>
+            Enter your Linear API key to connect your account. You can find your API key in your Linear settings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Linear API key"
+                className={`w-full p-2 border rounded ${error ? 'border-red-500' : ''}`}
+                required
+              />
+              {error && (
+                <p className="mt-2 text-sm text-red-500">{error}</p>
+              )}
+              <p className="mt-2 text-sm text-muted-foreground">
+                You can find your API key in your Linear settings under API.
+              </p>
+            </div>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !apiKey.trim()}
+              className="w-full"
+            >
+              {isLoading ? 'Connecting...' : 'Connect'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }; 
