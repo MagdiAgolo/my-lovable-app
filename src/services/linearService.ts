@@ -288,7 +288,7 @@ export const linearService = {
     }
   },
 
-  // Fetch issues for a team with enhanced New Architecture team support
+  // Fetch issues for a team with enhanced New Architecture team support and pagination
   async getIssuesByTeam(teamId: string): Promise<LinearIssue[]> {
     // Validate teamId early
     if (!teamId) {
@@ -297,99 +297,132 @@ export const linearService = {
       return [];
     }
 
-    console.log("Fetching issues for teamId:", teamId);
+    console.log("Fetching ALL issues for teamId:", teamId);
     
     try {
       // Check if this is the New Architecture team (needed for special handling)
       const isNewArchitectureTeam = await this.isNewArchitectureTeam(teamId);
       console.log(`Team ${teamId} is New Architecture team: ${isNewArchitectureTeam}`);
       
-      // Enhanced GraphQL query to ensure we get complete issue data 
-      // Increased limit from 100 to 250 to get more issues
-      const query = `
-        query IssuesByTeam($teamId: String!) {
-          team(id: $teamId) {
-            id
-            name
-            key
-            issues(first: 250) {
-              nodes {
-                id
-                title
-                identifier
-                estimate
-                createdAt
-                completedAt
-                updatedAt
-                description
-                priority
-                assignee {
-                  id
-                  name
-                  email
+      let allIssues: any[] = [];
+      let hasNextPage = true;
+      let endCursor: string | null = null;
+      let pageCount = 0;
+      let teamInfo: { id: string; name: string; key: string } | null = null;
+      
+      // Fetch ALL issues using pagination
+      while (hasNextPage && pageCount < 20) { // Safety limit of 20 pages (20 * 100 = 2000 issues max)
+        pageCount++;
+        console.log(`Fetching page ${pageCount} of issues for team ${teamId}...`);
+        
+        // Enhanced GraphQL query with pagination
+        const query = `
+          query IssuesByTeam($teamId: String!, $after: String) {
+            team(id: $teamId) {
+              id
+              name
+              key
+              issues(first: 100, after: $after) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
                 }
-                parent {
+                nodes {
                   id
                   title
-                }
-                cycle {
-                  id
-                  number
-                  name
-                  startsAt
-                  endsAt
-                }
-                state {
-                  id
-                  name
-                  type
+                  identifier
+                  estimate
+                  createdAt
+                  completedAt
+                  updatedAt
+                  description
+                  priority
+                  assignee {
+                    id
+                    name
+                    email
+                  }
+                  parent {
+                    id
+                    title
+                  }
+                  cycle {
+                    id
+                    number
+                    name
+                    startsAt
+                    endsAt
+                  }
+                  state {
+                    id
+                    name
+                    type
+                  }
                 }
               }
             }
           }
+        `;
+        
+        console.log(`Executing GraphQL query for team ${teamId}, page ${pageCount}`);
+        const response = await this.executeGraphQL(query, { teamId, after: endCursor });
+        
+        // Additional validation
+        if (!response) {
+          throw new Error(`No response from Linear API for team ID: ${teamId}`);
         }
-      `;
-      
-      console.log('Executing GraphQL query for team:', teamId);
-      const response = await this.executeGraphQL(query, { teamId });
-      
-      // Additional validation
-      if (!response) {
-        throw new Error(`No response from Linear API for team ID: ${teamId}`);
-      }
-      
-      if (!response.team) {
-        console.error(`Team not found for ID: ${teamId}`);
-        toast.error("Team not found. Please check your team ID and API key permissions.");
-        return [];
+        
+        if (!response.team) {
+          console.error(`Team not found for ID: ${teamId}`);
+          toast.error("Team not found. Please check your team ID and API key permissions.");
+          return [];
+        }
+        
+        // Store team info from first response
+        if (!teamInfo) {
+          teamInfo = {
+            id: teamId,
+            name: response.team.name || '',
+            key: response.team.key || ''
+          };
+        }
+
+        if (!response.team.issues?.nodes) {
+          console.warn(`No issues found for team ${teamId} on page ${pageCount}`);
+          break;
+        }
+
+        // Add issues from this page
+        allIssues = [...allIssues, ...response.team.issues.nodes];
+        
+        // Update pagination info
+        hasNextPage = response.team.issues.pageInfo.hasNextPage;
+        endCursor = response.team.issues.pageInfo.endCursor;
+        
+        console.log(`Page ${pageCount}: Retrieved ${response.team.issues.nodes.length} issues. Total so far: ${allIssues.length}. Has next page: ${hasNextPage}`);
       }
 
-      if (!response.team.issues?.nodes) {
-        console.warn(`No issues found for team ${teamId}`);
-        return [];
-      }
-
-      const team = { 
+      const team = teamInfo || { 
         id: teamId, 
-        name: response.team.name || '', 
-        key: response.team.key || '' 
+        name: '', 
+        key: '' 
       };
 
-      console.log(`Processing team: ${team.name} (${team.id})`);
-      console.log(`Retrieved ${response.team.issues.nodes.length} issues from Linear API`);
+      console.log(`🎯 COMPLETE RETRIEVAL: Processing team: ${team.name} (${team.id})`);
+      console.log(`🎯 COMPLETE RETRIEVAL: Retrieved ${allIssues.length} TOTAL issues from Linear API across ${pageCount} pages`);
       
       // Log all unique assignee names for debugging
       const uniqueAssignees = new Set<string>();
-      response.team.issues.nodes.forEach((issue: any) => {
+      allIssues.forEach((issue: any) => {
         if (issue.assignee?.name) {
           uniqueAssignees.add(issue.assignee.name);
         }
       });
-      console.log('Unique assignee names in response:', Array.from(uniqueAssignees));
+      console.log('🎯 COMPLETE RETRIEVAL: Unique assignee names in response:', Array.from(uniqueAssignees));
       
       // Count issues by cycle for debugging
       const cycleIssues = new Map<string, number>();
-      response.team.issues.nodes.forEach((issue: any) => {
+      allIssues.forEach((issue: any) => {
         if (issue.cycle) {
           const cycleId = issue.cycle.id;
           const cycleName = issue.cycle.name;
@@ -397,26 +430,13 @@ export const linearService = {
           cycleIssues.set(key, (cycleIssues.get(key) || 0) + 1);
         }
       });
-      console.log('Issues by cycle:', Object.fromEntries(cycleIssues.entries()));
+      console.log('🎯 COMPLETE RETRIEVAL: Issues by cycle:', Object.fromEntries(cycleIssues.entries()));
       
-      // Process issues from the response - DO NOT filter issues at this stage,
-      // we'll do filtering when displaying/analyzing them
-      const issues = response.team.issues.nodes.map((issue: any) => {
+      // Process ALL issues from the response - DO NOT filter issues at this stage
+      const issues = allIssues.map((issue: any) => {
         // Store the engineer name with normalization
         const engineerName = issue.assignee?.name || null;
         
-        // Log engineer name when it's specifically "fatma akram" to debug
-        if (engineerName && engineerName.toLowerCase().includes('fatma')) {
-          console.log('Found issue assigned to Fatma:', {
-            id: issue.id,
-            identifier: issue.identifier,
-            title: issue.title,
-            exactName: engineerName,
-            cycleId: issue.cycle?.id,
-            cycleName: issue.cycle?.name
-          });
-        }
-
         return {
           id: issue.id,
           identifier: issue.identifier,
@@ -437,7 +457,37 @@ export const linearService = {
         };
       });
       
-      console.log(`Total issues processed: ${issues.length}`);
+      console.log(`🎯 COMPLETE RETRIEVAL: Total issues processed: ${issues.length}`);
+      
+      // Special logging for New Architecture team
+      if (isNewArchitectureTeam) {
+        const newArch18Issues = issues.filter(issue => 
+          issue.cycle?.name?.includes('New Architecture 18') || 
+          issue.cycle?.name?.includes('Architecture 18')
+        );
+        const newArch19Issues = issues.filter(issue => 
+          issue.cycle?.name?.includes('New Architecture 19') || 
+          issue.cycle?.name?.includes('Architecture 19')
+        );
+        
+        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 18 issues found: ${newArch18Issues.length}`);
+        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 19 issues found: ${newArch19Issues.length}`);
+        
+        // Count done issues for each sprint
+        const sprint18Done = newArch18Issues.filter(issue => this.isIssueCompleted(issue));
+        const sprint19Done = newArch19Issues.filter(issue => this.isIssueCompleted(issue));
+        
+        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 18 DONE issues: ${sprint18Done.length}`);
+        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 19 DONE issues: ${sprint19Done.length}`);
+        
+        // Calculate velocities
+        const sprint18Velocity = sprint18Done.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
+        const sprint19Velocity = sprint19Done.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
+        
+        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 18 CALCULATED velocity: ${sprint18Velocity}`);
+        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 19 CALCULATED velocity: ${sprint19Velocity}`);
+      }
+      
       return issues;
     } catch (error) {
       console.error(`Error fetching issues for team ${teamId}:`, error);
@@ -710,7 +760,7 @@ export const linearService = {
     }
   },
 
-  // Fetch all cycles/sprints with enhanced New Architecture team support
+  // Fetch all cycles/sprints - Frontend will calculate velocity from retrieved issues
   async getTeamCycles(teamId: string): Promise<LinearCycle[]> {
     // Validate teamId early but don't show a toast if it's just empty/null
     // as this is likely during initial app loading
@@ -724,6 +774,7 @@ export const linearService = {
     try {
       console.log(`Fetching cycles for team ${teamId}`);
       
+      // Simplified query - no need to fetch issues here since frontend will use getIssuesByTeam
       const query = `
         query GetTeamCycles($teamId: String!) {
           team(id: $teamId) {
@@ -734,16 +785,6 @@ export const linearService = {
                 number
                 startsAt
                 endsAt
-                issues {
-                  nodes {
-                    id
-                    state {
-                      type
-                      name
-                    }
-                    estimate
-                  }
-                }
               }
             }
           }
@@ -768,27 +809,10 @@ export const linearService = {
         return [];
       }
 
-      // Process cycles - calculate points from actual completed issues without scaling
-      const filteredCycles = response.team.cycles.nodes
-        .map((cycle: { id: string; name: string; number: number; startsAt: string; endsAt: string; issues: { nodes: Array<{ state: { type: string; name: string }; estimate: number }> } }) => {
-          // Get all completed issues for this cycle, excluding canceled or duplicate issues
-          const completedIssues = cycle.issues.nodes.filter(issue => {
-            const isCompleted = this.isIssueCompleted(issue);
-            
-            const isCanceled = 
-              issue.state.name.toLowerCase().includes('cancel') ||
-              issue.state.name.toLowerCase().includes('duplicate') ||
-              issue.state.type === 'canceled';
-              
-            return isCompleted && !isCanceled;
-          });
-          
-          // Calculate total points by summing up estimates of all completed issues
-          const totalPoints = completedIssues.reduce((sum: number, issue) => {
-            return sum + (issue.estimate || 0);
-          }, 0);
-          
-          console.log(`Cycle ${cycle.name}: ${completedIssues.length} completed issues, ${totalPoints} total points`);
+      // Process cycles - NO velocity calculation here, frontend will handle it
+      const cycles = response.team.cycles.nodes
+        .map((cycle: { id: string; name: string; number: number; startsAt: string; endsAt: string }) => {
+          console.log(`Cycle ${cycle.name}: Basic info retrieved (velocity will be calculated by frontend)`);
           
           return {
             id: cycle.id,
@@ -796,13 +820,14 @@ export const linearService = {
             number: cycle.number,
             startsAt: cycle.startsAt,
             endsAt: cycle.endsAt,
-            points: totalPoints
+            // Remove points calculation - frontend will handle this using paginated issues
+            points: 0 // This will be ignored by frontend
           };
         })
         .sort((a: LinearCycle, b: LinearCycle) => b.number - a.number);
 
-      console.log(`Found ${filteredCycles.length} cycles with calculated points`);
-      return filteredCycles;
+      console.log(`✅ Retrieved ${cycles.length} cycles (velocity calculations will be done by frontend using paginated issues)`);
+      return cycles;
     } catch (error) {
       console.error(`Error fetching cycles for team ${teamId}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

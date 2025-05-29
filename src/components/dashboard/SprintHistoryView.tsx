@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, PlusCircle, LineChart, RefreshCw, Settings, GitBranch, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, PlusCircle, LineChart, RefreshCw, Settings, GitBranch, Activity, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VelocityTable from './VelocityTable';
 import { DashboardHeader } from './DashboardHeader';
@@ -7,11 +7,13 @@ import { LinearTeam } from '@/types/linear';
 import '../../styles/_colors.scss';
 import { FlowBoard } from './FlowBoard';
 import { BacklogHealthMonitor } from './BacklogHealthMonitor';
+import SimpleSprintIssues from './SimpleSprintIssues';
 
 const TEXT = {
   velocityChart: 'Velocity History',
   velocityTrends: 'Velocity Trends',
   scopeCreep: 'Scope Creep',
+  doneIssues: 'Done Issues',
   flowBoard: 'Flow Board',
   backlogHealth: 'Backlog Health Monitor',
   settings: 'API Config'
@@ -38,7 +40,7 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
   teamName,
   onApiConfigClick
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'chart' | 'trends' | 'scopeCreep'>('chart');
+  const [activeSubTab, setActiveSubTab] = useState<'chart' | 'trends' | 'scopeCreep' | 'doneIssues'>('chart');
   const [showFlowBoard, setShowFlowBoard] = useState(false);
   const [showBacklogHealth, setShowBacklogHealth] = useState(false);
 
@@ -57,6 +59,11 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
       id: 'scopeCreep',
       label: TEXT.scopeCreep,
       icon: PlusCircle
+    },
+    {
+      id: 'doneIssues',
+      label: TEXT.doneIssues,
+      icon: CheckCircle
     }
   ];
 
@@ -74,7 +81,7 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
     setActiveSubTab('chart'); // Reset sub tab
   };
 
-  const handleSubTabClick = (tabId: 'chart' | 'trends' | 'scopeCreep') => {
+  const handleSubTabClick = (tabId: 'chart' | 'trends' | 'scopeCreep' | 'doneIssues') => {
     setActiveSubTab(tabId);
     setShowFlowBoard(false);
     setShowBacklogHealth(false);
@@ -211,6 +218,10 @@ export const SprintHistoryView: React.FC<SprintHistoryViewProps> = ({
           ) : showBacklogHealth ? (
             <div className="implicit-card">
               <BacklogHealthMonitor teamId={selectedTeamId || ''} />
+            </div>
+          ) : activeSubTab === 'doneIssues' ? (
+            <div className="implicit-card">
+              <SimpleSprintIssues teamId={selectedTeamId || ''} />
             </div>
           ) : (
             <div className="implicit-card">

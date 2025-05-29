@@ -290,17 +290,32 @@ export default function VelocityTable({
   // Get the selected cycle
   const selectedCycle = cycles?.find(cycle => cycle.id === selectedCycleId);
   
-  // Use the cycle's points value directly
-  const totalVelocity = selectedCycle?.points || 0;
-  
-  // Add debug logging to verify the velocity value
-  if (selectedCycle) {
-    console.log(`Selected cycle: ${selectedCycle.name}, points: ${selectedCycle.points}`);
+  // Calculate velocity from ACTUAL ISSUES - never use cycle.points
+  const calculateCurrentCycleVelocity = () => {
+    if (!selectedCycle || !cycleIssues) return 0;
     
-    // Calculate velocity directly from issues to double-check
-    const cycleCompletedIssues = cycleIssues.filter(issue => linearService.isIssueCompleted(issue));
-    const calculatedVelocity = cycleCompletedIssues.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
-    console.log(`Direct calculation for cycle ${selectedCycle.name}: ${cycleCompletedIssues.length} completed issues, ${calculatedVelocity} total points`);
+    const doneIssues = cycleIssues.filter(issue => linearService.isIssueCompleted(issue));
+    const velocity = doneIssues.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
+    
+    console.log(`🎯 Current cycle velocity calculation:`);
+    console.log(`   Cycle: ${selectedCycle.name}`);
+    console.log(`   Done issues: ${doneIssues.length}`);
+    console.log(`   Calculated velocity: ${velocity} points`);
+    
+    return velocity;
+  };
+  
+  const totalVelocity = calculateCurrentCycleVelocity();
+  
+  // Add debug logging to verify the velocity value ALWAYS comes from issues
+  if (selectedCycle) {
+    console.log(`🎯 Selected cycle: ${selectedCycle.name}`);
+    console.log(`🎯 Using CALCULATED velocity: ${totalVelocity} (from ${cycleIssues.length} cycle issues)`);
+    
+    // Show comparison with cycle.points if it exists (for debugging only)
+    if (selectedCycle.points) {
+      console.log(`🎯 NOTE: cycle.points exists (${selectedCycle.points}) but we're using calculated velocity (${totalVelocity})`);
+    }
   }
   
   // Calculate cycle time for completed issues
@@ -339,16 +354,37 @@ export default function VelocityTable({
     // Sort cycles chronologically (oldest to newest)
     const sortedCycles = [...cycles].sort((a, b) => a.number - b.number);
     
-    // Format data for the bar chart
-    const data = sortedCycles.map(cycle => ({
-      name: cycle.name,
-      velocity: cycle.points || 0, // Ensure points is not undefined
-      cycleId: cycle.id,
-      startDate: cycle.startsAt || '',
-      endDate: cycle.endsAt || ''
-    }));
+    // Format data for the bar chart - ALWAYS calculate velocity from retrieved issues
+    const data = sortedCycles.map(cycle => {
+      // Get all issues for this cycle from the retrieved issues
+      const cycleIssuesForCalc = issues?.filter(issue => issue.cycle?.id === cycle.id) || [];
+      
+      console.log(`📊 Processing ${cycle.name}: Found ${cycleIssuesForCalc.length} issues`);
+      
+      // Calculate velocity using CONSISTENT method - same as sprint details
+      const doneIssues = cycleIssuesForCalc.filter(issue => {
+        const isCompleted = linearService.isIssueCompleted(issue);
+        return isCompleted;
+      });
+      
+      // Calculate velocity from actual issue estimates (not cycle.points)
+      const calculatedVelocity = doneIssues.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
+      
+      console.log(`📊 ${cycle.name}: ${doneIssues.length} done issues = ${calculatedVelocity} velocity points`);
+      
+      return {
+        name: cycle.name,
+        velocity: calculatedVelocity, // Always use calculated velocity from issues
+        cycleId: cycle.id,
+        number: cycle.number,
+        // Store both for debugging (but only use calculatedVelocity)
+        originalCyclePoints: cycle.points || 0,
+        issueCount: cycleIssuesForCalc.length,
+        doneIssueCount: doneIssues.length
+      };
+    });
     
-    console.log(`Chart data prepared: ${data.length} completed cycles`);
+    console.log('📊 Chart data prepared:', data.map(d => `${d.name}: ${d.velocity} velocity`));
     return data;
   };
   
@@ -454,7 +490,7 @@ export default function VelocityTable({
       <SprintHistoryContent
         activeSubTab={activeSubTab}
         cycles={cycles}
-        cycleIssues={cycleIssues}
+        cycleIssues={issues || []}
         selectedCycleId={selectedCycleId || ''}
         setSelectedCycleId={setSelectedCycleId}
         selectedTeamId={teamId}

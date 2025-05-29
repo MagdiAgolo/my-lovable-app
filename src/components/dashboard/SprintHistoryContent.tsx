@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LinearCycle, LinearIssue, LinearTeam } from '@/types/linear';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, ReferenceLine } from 'recharts';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Clock, BarChart3, AlertTriangle, TrendingUp, PlusCircle, Calendar } from 'lucide-react';
 import '../../styles/chartTheme.scss';
-import SprintDetailView from './SprintDetailView';
+import SimpleSprintDetails from './SimpleSprintDetails';
+import { linearService } from '@/services/linearService';
 
 interface SprintHistoryContentProps {
   activeSubTab: 'chart' | 'trends' | 'scopeCreep' | 'comparison';
@@ -46,6 +47,19 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
   const [viewingSprintId, setViewingSprintId] = useState<string | null>(null);
   const selectedCycle = cycles?.find(cycle => cycle.id === selectedCycleId);
   
+  // Debug logging to verify we're getting ALL issues
+  console.log(`🎯 SPRINT HISTORY - Received ${cycleIssues.length} total issues for calculations`);
+  
+  // Count issues by cycle for verification
+  const issuesByCycle = new Map<string, number>();
+  cycleIssues.forEach(issue => {
+    if (issue.cycle?.id) {
+      const cycleName = issue.cycle.name || issue.cycle.id;
+      issuesByCycle.set(cycleName, (issuesByCycle.get(cycleName) || 0) + 1);
+    }
+  });
+  console.log(`🎯 SPRINT HISTORY - Issues by cycle:`, Object.fromEntries(issuesByCycle.entries()));
+  
   // Function to show sprint details when clicked
   const showSprintDetails = (cycleId: string) => {
     setViewingSprintId(cycleId);
@@ -59,20 +73,89 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
   // Get the current viewing cycle and its issues
   const viewingCycle = cycles?.find(cycle => cycle.id === viewingSprintId);
   
-  // Helper function to check if an issue is "done"
-  const isDoneIssue = (issue: LinearIssue): boolean => {
-    // Check type first (most reliable)
-    if (issue.state?.type === 'completed') {
-      return true;
+  // Enhanced issue filtering that works consistently across all sprints - MATCHES SimpleSprintDetails approach
+  const getIssuesForCycle = (cycleId: string) => {
+    // Get the cycle we're looking for
+    const targetCycle = cycles?.find(c => c.id === cycleId);
+    if (!targetCycle) {
+      console.log(`No cycle found with ID: ${cycleId}`);
+      return [];
     }
     
-    // Check state name contains done/complete/merged/shipped keywords
-    const stateName = issue.state?.name?.toLowerCase() || '';
-    return stateName.includes('done') || 
-           stateName.includes('complete') || 
-           stateName.includes('merged') || 
-           stateName.includes('shipped') ||
-           stateName.includes('delivered');
+    // Get issues for this specific cycle from the retrieved cycleIssues array
+    // This should be the SAME as SimpleSprintDetails: issues.filter(issue => issue.cycle?.id === cycleId)
+    const filteredIssues = cycleIssues.filter(issue => issue.cycle?.id === cycleId);
+    
+    // Special debug for New Architecture 18 to verify consistency
+    if (targetCycle.name?.includes('New Architecture 18')) {
+      console.log('🔍 HISTORY - GET_ISSUES_FOR_CYCLE DEBUG - New Architecture 18:');
+      console.log(`🎯 Looking for cycle: ${targetCycle.name} (ID: ${cycleId})`);
+      console.log(`📋 Total cycleIssues array length: ${cycleIssues.length}`);
+      console.log(`🎯 Filtered issues for this cycle: ${filteredIssues.length}`);
+      
+      // Show which cycle IDs are in the cycleIssues array
+      const cycleIdsInArray = [...new Set(cycleIssues.map(issue => issue.cycle?.id).filter(Boolean))];
+      console.log(`🔗 Cycle IDs in cycleIssues array:`, cycleIdsInArray);
+      
+      // Check if our target cycle ID is in the array
+      console.log(`✅ Target cycle ID ${cycleId} found in array: ${cycleIdsInArray.includes(cycleId)}`);
+      
+      // Show detailed issues for this cycle
+      filteredIssues.forEach((issue, index) => {
+        const isCompleted = linearService.isIssueCompleted(issue);
+        console.log(`  ${index + 1}. ${issue.identifier} - "${issue.title}"`);
+        console.log(`     State: ${issue.state?.name} (type: ${issue.state?.type})`);
+        console.log(`     Points: ${issue.estimate || 0}`);
+        console.log(`     Completed: ${isCompleted ? 'YES' : 'NO'}`);
+      });
+    }
+    
+    console.log(`Found ${filteredIssues.length} issues for cycle ${targetCycle.name} (${cycleId})`);
+    return filteredIssues;
+  };
+  
+  // Helper function to calculate velocity for a cycle - EXACTLY MATCHES SimpleSprintDetails
+  const calculateVelocityForCycle = (cycleIssues: LinearIssue[]): number => {
+    // Use EXACT same logic as SimpleSprintDetails: getIssuesByStatus -> done -> reduce
+    const doneIssues = cycleIssues.filter(issue => {
+      const isCompleted = linearService.isIssueCompleted(issue);
+      return isCompleted;
+    });
+    
+    const velocity = doneIssues.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
+    return velocity;
+  };
+
+  // Helper function to calculate velocity for cycle with detailed debug for New Architecture 18
+  const calculateVelocityForCycleWithDebug = (cycleIssues: LinearIssue[], cycleName: string): number => {
+    if (cycleName?.includes('New Architecture 18')) {
+      console.log('🔍 HISTORY VELOCITY DEBUG - New Architecture 18:');
+      console.log(`📊 Total issues found: ${cycleIssues.length}`);
+      
+      const doneIssues = cycleIssues.filter(issue => {
+        const isCompleted = linearService.isIssueCompleted(issue);
+        return isCompleted;
+      });
+      
+      const velocity = doneIssues.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
+      
+      console.log(`🎯 HISTORY CALCULATION - Done issues: ${doneIssues.length}/${cycleIssues.length}`);
+      console.log(`🎯 HISTORY CALCULATION - Total velocity: ${velocity} points`);
+      console.log(`🎯 HISTORY CALCULATION - Done issues breakdown:`);
+      doneIssues.forEach((issue, index) => {
+        console.log(`     ${index + 1}. ${issue.identifier}: ${issue.estimate || 0} pts`);
+      });
+      
+      return velocity;
+    }
+    
+    // Use the same calculation as regular method
+    return calculateVelocityForCycle(cycleIssues);
+  };
+
+  // Helper function to check if an issue is "done" - DEPRECATED: Use linearService.isIssueCompleted instead
+  const isDoneIssue = (issue: LinearIssue): boolean => {
+    return linearService.isIssueCompleted(issue);
   };
   
   // Helper function to check if an issue should be excluded (canceled, duplicate, etc.)
@@ -84,248 +167,6 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
            stateName.includes('duplicate') || 
            issueTitle.includes('cancel') || 
            issueTitle.includes('duplicate');
-  };
-  
-  // Enhanced issue filtering that works consistently across all sprints
-  const getIssuesForCycle = (cycleId: string) => {
-    // Get the cycle we're looking for
-    const targetCycle = cycles?.find(c => c.id === cycleId);
-    if (!targetCycle) {
-      console.log(`No cycle found with ID: ${cycleId}`);
-      return [];
-    }
-    
-    console.log(`Finding issues for cycle: ${targetCycle.name} (ID: ${cycleId})`);
-    console.log(`Cycle dates: ${targetCycle.startsAt} to ${targetCycle.endsAt}`);
-    console.log(`Cycle number: ${targetCycle.number}`);
-    console.log(`Cycle points from API: ${targetCycle.points}`);
-    
-    // Collect all potential matches using multiple strategies
-    const allMatches = new Map<string, LinearIssue>();
-    
-    // 1. Direct ID matching (most reliable)
-    cycleIssues.filter(issue => issue.cycle?.id === cycleId && !isExcludedIssue(issue))
-      .forEach(issue => {
-        if (!allMatches.has(issue.id)) {
-          allMatches.set(issue.id, issue);
-          console.log(`Direct ID match: ${issue.identifier} - ${issue.title}`);
-        }
-      });
-
-    // 2. Match by cycle number (more reliable than name)
-    if (targetCycle.number) {
-      cycleIssues.filter(issue => {
-        // Skip issues already matched or excluded
-        if (allMatches.has(issue.id) || isExcludedIssue(issue)) return false;
-        
-        return issue.cycle?.number === targetCycle.number;
-      })
-      .forEach(issue => {
-        allMatches.set(issue.id, issue);
-        console.log(`Number match: ${issue.identifier} - ${issue.title}`);
-      });
-    }
-    
-    // 3. Match by sprint name/number extracted from name
-    if (targetCycle.name) {
-      const targetSprintNumberMatch = targetCycle.name.match(/sprint\s*(\d+)/i);
-      const targetSprintNumber = targetSprintNumberMatch ? targetSprintNumberMatch[1] : null;
-      
-      if (targetSprintNumber) {
-        cycleIssues.filter(issue => {
-          // Skip issues already matched or excluded
-          if (allMatches.has(issue.id) || isExcludedIssue(issue)) return false;
-          
-          if (!issue.cycle?.name) return false;
-          
-          const issueSprintNumberMatch = issue.cycle.name.match(/sprint\s*(\d+)/i);
-          const issueSprintNumber = issueSprintNumberMatch ? issueSprintNumberMatch[1] : null;
-          
-          return issueSprintNumber === targetSprintNumber;
-        })
-        .forEach(issue => {
-          allMatches.set(issue.id, issue);
-          console.log(`Sprint number match: ${issue.identifier} - ${issue.title}`);
-        });
-      }
-    }
-    
-    // 4. Date-based matching with more flexible date range
-    if (targetCycle.startsAt && targetCycle.endsAt) {
-      const cycleStartDate = new Date(targetCycle.startsAt).getTime();
-      const cycleEndDate = new Date(targetCycle.endsAt).getTime();
-      
-      // Add a buffer around dates (2 days) to catch edge cases
-      const bufferMs = 2 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
-      const extendedStartDate = cycleStartDate - bufferMs;
-      const extendedEndDate = cycleEndDate + bufferMs;
-      
-      cycleIssues.filter(issue => {
-        // Skip issues already matched or excluded
-        if (allMatches.has(issue.id) || isExcludedIssue(issue)) return false;
-        
-        // Check if the issue has a completedAt date
-        if (issue.completedAt) {
-          const completedDate = new Date(issue.completedAt).getTime();
-          // Check if the issue was completed within the sprint timeframe (with buffer)
-          return completedDate >= extendedStartDate && completedDate <= extendedEndDate;
-        }
-        
-        // If no completedAt, check if the issue was created during the sprint and is completed
-        if (issue.createdAt && isDoneIssue(issue)) {
-          const createdDate = new Date(issue.createdAt).getTime();
-          return createdDate >= extendedStartDate && createdDate <= extendedEndDate;
-        }
-        
-        return false;
-      })
-      .forEach(issue => {
-        allMatches.set(issue.id, issue);
-        console.log(`Date-based match: ${issue.identifier} - ${issue.title}`);
-      });
-    }
-    
-    // 5. Title or identifier contains sprint number
-    if (targetCycle.name) {
-      // Extract sprint number if available
-      const sprintNumberMatch = targetCycle.name.match(/sprint\s*(\d+)/i);
-      if (sprintNumberMatch) {
-        const sprintNumber = sprintNumberMatch[1];
-        
-        cycleIssues.filter(issue => {
-          // Skip issues already matched or excluded
-          if (allMatches.has(issue.id) || isExcludedIssue(issue)) return false;
-          
-          // Look for sprint number in issue identifier or title
-          const identifierMatch = issue.identifier && 
-            (issue.identifier.toLowerCase().includes(`sprint-${sprintNumber.toLowerCase()}`) || 
-             issue.identifier.toLowerCase().includes(`s${sprintNumber.toLowerCase()}`));
-             
-          const titleMatch = issue.title && 
-            (issue.title.toLowerCase().includes(`sprint ${sprintNumber.toLowerCase()}`) || 
-             issue.title.toLowerCase().includes(`s${sprintNumber}`));
-             
-          return identifierMatch || titleMatch;
-        })
-        .forEach(issue => {
-          allMatches.set(issue.id, issue);
-          console.log(`Identifier/title match: ${issue.identifier} - ${issue.title}`);
-        });
-      }
-    }
-    
-    // 6. Special case for empty results - find completed issues that might belong to this cycle
-    if (allMatches.size === 0 && targetCycle.startsAt && targetCycle.endsAt) {
-      console.log(`No matches found for ${targetCycle.name}. Using time-based completed issue matching.`);
-      
-      const cycleStartDate = new Date(targetCycle.startsAt).getTime();
-      const cycleEndDate = new Date(targetCycle.endsAt).getTime();
-      
-      // Find all completed issues that don't have a cycle assigned or have invalid cycle data
-      cycleIssues.filter(issue => 
-        (!issue.cycle || !issue.cycle.id || issue.cycle.id === 'undefined' || issue.cycle.id === 'null') &&
-        !isExcludedIssue(issue)
-      )
-      .filter(issue => {
-        // Only consider completed issues
-        if (!isDoneIssue(issue)) {
-          return false;
-        }
-        
-        // Check if completed during this cycle
-        if (issue.completedAt) {
-          const completedDate = new Date(issue.completedAt).getTime();
-          return completedDate >= cycleStartDate && completedDate <= cycleEndDate;
-        }
-        
-        return false;
-      })
-      .forEach(issue => {
-        allMatches.set(issue.id, issue);
-        console.log(`Orphaned completed issue match: ${issue.identifier} - ${issue.title}`);
-      });
-    }
-    
-    // Fall back to all completed issues in date range if still no matches
-    if (allMatches.size === 0 && targetCycle.startsAt && targetCycle.endsAt) {
-      console.log(`Still no matches for ${targetCycle.name}. Using date range for all completed issues.`);
-      
-      const cycleStartDate = new Date(targetCycle.startsAt).getTime();
-      const cycleEndDate = new Date(targetCycle.endsAt).getTime();
-      
-      // Find all completed issues in the date range, regardless of cycle
-      cycleIssues.filter(issue => {
-        // Exclude canceled/duplicate issues
-        if (isExcludedIssue(issue)) return false;
-        
-        // Only consider completed issues
-        if (!isDoneIssue(issue)) {
-          return false;
-        }
-        
-        // Check if completed during this cycle
-        if (issue.completedAt) {
-          const completedDate = new Date(issue.completedAt).getTime();
-          return completedDate >= cycleStartDate && completedDate <= cycleEndDate;
-        }
-        
-        return false;
-      })
-      .forEach(issue => {
-        allMatches.set(issue.id, issue);
-        console.log(`Last resort time-based match: ${issue.identifier} - ${issue.title}`);
-      });
-    }
-    
-    // Log summary of results
-    const matchedIssues = Array.from(allMatches.values());
-    console.log(`Total issues found for ${targetCycle.name}: ${matchedIssues.length}`);
-    
-    if (matchedIssues.length === 0) {
-      console.log(`WARNING: No matching issues found for cycle: ${targetCycle.name}`);
-      
-      // Additional diagnostics for troubleshooting
-      console.log(`All available issue cycle IDs:`);
-      const uniqueCycleIds = new Set(
-        cycleIssues
-          .filter(issue => issue.cycle?.id)
-          .map(issue => `${issue.cycle?.id} (${issue.cycle?.name})`)
-      );
-      console.log(Array.from(uniqueCycleIds).join(', '));
-    }
-    
-    // Log completed issues for debugging
-    const completedIssues = matchedIssues.filter(issue => isDoneIssue(issue));
-    const completedCount = completedIssues.length;
-    
-    // Calculate the total points from completed issues
-    const completedPoints = completedIssues
-      .reduce((sum, issue) => sum + (issue.estimate || 0), 0);
-    
-    console.log(`Completed issues for ${targetCycle.name}: ${completedCount}, Total points: ${completedPoints}`);
-    console.log(`Cycle points from API for ${targetCycle.name}: ${targetCycle.points}`);
-    
-    // If we have no issues but the cycle has points data from the API, return stub data
-    if (matchedIssues.length === 0 && targetCycle.points > 0) {
-      console.log(`Creating stub issues for ${targetCycle.name} based on API velocity data`);
-      
-      // Create a stub issue to ensure velocity data is represented
-      const stubIssue: LinearIssue = {
-        id: `stub-${targetCycle.id}`,
-        title: `[Stub] ${targetCycle.name} aggregate data`,
-        status: 'completed',
-        state: { id: 'completed', name: 'Completed', type: 'completed' },
-        estimate: targetCycle.points,
-        createdAt: targetCycle.startsAt,
-        completedAt: targetCycle.endsAt,
-        team: { id: selectedTeamId, name: 'Selected Team' },
-        cycle: targetCycle,
-      };
-      
-      return [stubIssue];
-    }
-    
-    return matchedIssues;
   };
   
   // Get issues for the current viewing cycle
@@ -369,11 +210,10 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
   // If we're viewing a specific sprint, show its detailed view
   if (viewingCycle) {
     return (
-      <SprintDetailView 
-        cycle={viewingCycle}
-        cycleIssues={viewingCycleIssues}
+      <SimpleSprintDetails 
+        cycleId={viewingCycle.id}
+        teamId={selectedTeamId}
         onBack={handleBackToList}
-        scopeCreepPercentage={viewingScopeCreep}
       />
     );
   }
@@ -381,11 +221,11 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
   // Add debug logging for completed issues
   console.log('SprintDetailView - Completed issues count:', viewingCycleIssues.length);
   
-  // Filter issues - handle both regular issues and stub data
+  // Filter issues - handle both regular issues and stub data - CONSISTENT with sprint details
   const completedIssues = viewingCycleIssues.length === 0 
     ? cycleIssues // If it's stub data, all issues are considered "completed"
     : cycleIssues.filter(issue => {
-        const isDone = isDoneIssue(issue) && !isExcludedIssue(issue);
+        const isDone = linearService.isIssueCompleted(issue) && !isExcludedIssue(issue);
         if (isDone) {
           console.log(`Including done issue in velocity: ${issue.identifier} - ${issue.title} - State: ${issue.state?.name}`);
         }
@@ -407,19 +247,12 @@ export const SprintHistoryContent: React.FC<SprintHistoryContentProps> = ({
       // Pre-calculate issues to ensure consistency with detail view
       const cycleIssuesData = getIssuesForCycle(cycle.id);
       
-      // Calculate points from completed issues
-      const doneIssues = cycleIssuesData
-        .filter(issue => isDoneIssue(issue) && !isExcludedIssue(issue));
+      // Use CONSISTENT velocity calculation with debug for New Architecture 18
+      const velocityPoints = cycle.name?.includes('New Architecture 18') 
+        ? calculateVelocityForCycleWithDebug(cycleIssuesData, cycle.name)
+        : calculateVelocityForCycle(cycleIssuesData);
       
-      console.log(`Sprint ${cycle.name}: Found ${doneIssues.length} done issues for velocity calculation`);
-      
-      const calculatedPoints = doneIssues
-        .reduce((sum, issue) => sum + (issue.estimate || 0), 0);
-      
-      // Use calculated points if available, otherwise fall back to API points
-      const velocityPoints = calculatedPoints > 0 ? calculatedPoints : (cycle.points || 0);
-      
-      console.log(`Chart data for ${cycle.name}: API points=${cycle.points}, Calculated=${calculatedPoints}, Using=${velocityPoints}`);
+      console.log(`Chart data for ${cycle.name}: Calculated velocity=${velocityPoints} (using ${cycle.name?.includes('New Architecture 18') ? 'DEBUG' : 'consistent'} method)`);
       
       return {
         name: cycle.name,
