@@ -12,8 +12,8 @@ import { SprintHistoryView } from "@/components/dashboard/SprintHistoryView";
 // Explicitly list the exact allowed teams
 const ALLOWED_TEAMS = [
   // Updated to be more flexible with team names
-  "Linking", 
-  "New Architecture",
+  "Content Analytics", 
+  "Architecture",
   "Product & Situation Extraction",
   "Product Support",
   "Product support answers",
@@ -182,11 +182,24 @@ const Index = () => {
 
   return (
     <DashboardLayout>
-      {loading && !selectedTeamId ? (
+      {showApiConfig ? (
+        <div className="flex items-center justify-center h-full">
+          <ApiKeyConfig onSuccessfulConnection={() => {
+            setShowApiConfig(false);
+            queryClient.invalidateQueries({ queryKey: ['teams'] });
+          }} />
+        </div>
+      ) : loading && !selectedTeamId ? (
         <div className="flex items-center justify-center h-full">
           <div className="text-center p-8">
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-white">Loading teams...</p>
+            <button 
+              onClick={() => setShowApiConfig(true)}
+              className="px-4 py-2 bg-primary text-black rounded hover:bg-primary-light"
+            >
+              Set API Key
+            </button>
           </div>
         </div>
       ) : filteredTeams && filteredTeams.length > 0 ? (
@@ -210,7 +223,7 @@ const Index = () => {
               onClick={() => setShowApiConfig(true)}
               className="px-4 py-2 bg-primary text-black rounded hover:bg-primary-light"
             >
-              Settings
+              Set API Key
             </button>
           </div>
         </div>

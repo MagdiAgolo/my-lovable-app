@@ -300,9 +300,9 @@ export const linearService = {
     console.log("Fetching ALL issues for teamId:", teamId);
     
     try {
-      // Check if this is the New Architecture team (needed for special handling)
-      const isNewArchitectureTeam = await this.isNewArchitectureTeam(teamId);
-      console.log(`Team ${teamId} is New Architecture team: ${isNewArchitectureTeam}`);
+      // Check if this is the Architecture team (needed for special handling)
+      const isArchitectureTeam = await this.isArchitectureTeam(teamId);
+      console.log(`Team ${teamId} is Architecture team: ${isArchitectureTeam}`);
       
       let allIssues: any[] = [];
       let hasNextPage = true;
@@ -459,33 +459,33 @@ export const linearService = {
       
       console.log(`🎯 COMPLETE RETRIEVAL: Total issues processed: ${issues.length}`);
       
-      // Special logging for New Architecture team
-      if (isNewArchitectureTeam) {
-        const newArch18Issues = issues.filter(issue => 
-          issue.cycle?.name?.includes('New Architecture 18') || 
-          issue.cycle?.name?.includes('Architecture 18')
+      // Special logging for Architecture team
+      if (isArchitectureTeam) {
+        const arch18Issues = issues.filter(issue => 
+          issue.cycle?.name?.includes('Architecture 18') || 
+          issue.cycle?.name?.includes('New Architecture 18')
         );
-        const newArch19Issues = issues.filter(issue => 
-          issue.cycle?.name?.includes('New Architecture 19') || 
-          issue.cycle?.name?.includes('Architecture 19')
+        const arch19Issues = issues.filter(issue => 
+          issue.cycle?.name?.includes('Architecture 19') || 
+          issue.cycle?.name?.includes('New Architecture 19')
         );
         
-        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 18 issues found: ${newArch18Issues.length}`);
-        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 19 issues found: ${newArch19Issues.length}`);
+        console.log(`🎯 ARCHITECTURE TEAM - Sprint 18 issues found: ${arch18Issues.length}`);
+        console.log(`🎯 ARCHITECTURE TEAM - Sprint 19 issues found: ${arch19Issues.length}`);
         
         // Count done issues for each sprint
-        const sprint18Done = newArch18Issues.filter(issue => this.isIssueCompleted(issue));
-        const sprint19Done = newArch19Issues.filter(issue => this.isIssueCompleted(issue));
+        const sprint18Done = arch18Issues.filter(issue => this.isIssueCompleted(issue));
+        const sprint19Done = arch19Issues.filter(issue => this.isIssueCompleted(issue));
         
-        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 18 DONE issues: ${sprint18Done.length}`);
-        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 19 DONE issues: ${sprint19Done.length}`);
+        console.log(`🎯 ARCHITECTURE TEAM - Sprint 18 DONE issues: ${sprint18Done.length}`);
+        console.log(`🎯 ARCHITECTURE TEAM - Sprint 19 DONE issues: ${sprint19Done.length}`);
         
         // Calculate velocities
         const sprint18Velocity = sprint18Done.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
         const sprint19Velocity = sprint19Done.reduce((sum, issue) => sum + (issue.estimate || 0), 0);
         
-        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 18 CALCULATED velocity: ${sprint18Velocity}`);
-        console.log(`🎯 NEW ARCHITECTURE TEAM - Sprint 19 CALCULATED velocity: ${sprint19Velocity}`);
+        console.log(`🎯 ARCHITECTURE TEAM - Sprint 18 CALCULATED velocity: ${sprint18Velocity}`);
+        console.log(`🎯 ARCHITECTURE TEAM - Sprint 19 CALCULATED velocity: ${sprint19Velocity}`);
       }
       
       return issues;
@@ -598,8 +598,8 @@ export const linearService = {
     }
   },
 
-  // Utility method to check if a team is the New Architecture team
-  async isNewArchitectureTeam(teamId: string): Promise<boolean> {
+  // Utility method to check if a team is the Architecture team
+  async isArchitectureTeam(teamId: string): Promise<boolean> {
     try {
       const query = `
         query TeamName($teamId: String!) {
@@ -611,7 +611,7 @@ export const linearService = {
       `;
       
       const response = await this.executeGraphQL(query, { teamId });
-      return response?.team?.name === "New Architecture";
+      return response?.team?.name === "Architecture";
     } catch (error) {
       console.error("Error checking team name:", error);
       return false;
