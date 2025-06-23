@@ -4,8 +4,8 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import VelocityTable from "@/components/dashboard/VelocityTable";
 import { linearService } from "@/services/linearService";
 import { LinearIssue, TeamMetrics, LinearTeam } from "@/types/linear";
-import { toast } from "@/components/ui/sonner";
-import { getLinearApiKey, setLinearApiKey } from "@/config/api-config";
+import { toast } from "sonner";
+import { getLinearApiKey, setLinearApiKey, hasStoredApiKey, clearStoredApiKey } from "@/config/api-config";
 import { ApiKeyConfig } from "@/components/config/ApiKeyConfig";
 import { SprintHistoryView } from "@/components/dashboard/SprintHistoryView";
 
@@ -40,23 +40,37 @@ const Index = () => {
   
   // Check for API key on mount
   useEffect(() => {
-    const currentKey = getLinearApiKey();
-    if (!currentKey) {
-      setShowApiConfig(true);
-      setIsLoadingTeams(false);
-    } else {
-      try {
-        linearService.setApiKey(currentKey);
-      } catch (error) {
-        console.error('Error setting API key:', error);
+    const checkApiKey = async () => {
+      const currentKey = await getLinearApiKey();
+      if (!currentKey) {
         setShowApiConfig(true);
-        toast.error('Invalid API key. Please enter a valid Linear API key.');
         setIsLoadingTeams(false);
+      } else {
+        try {
+          linearService.setApiKey(currentKey);
+        } catch (error) {
+          console.error('Error setting API key:', error);
+          setShowApiConfig(true);
+          toast.error('Invalid API key. Please enter a valid Linear API key.');
+          setIsLoadingTeams(false);
+        }
       }
-    }
+    };
+    
+    checkApiKey();
   }, []);
   
-  const hasApiKey = !!getLinearApiKey();
+  const [hasApiKey, setHasApiKey] = useState(false);
+  
+  // Check if we have a stored API key
+  useEffect(() => {
+    const checkStoredKey = async () => {
+      const hasKey = await hasStoredApiKey();
+      setHasApiKey(hasKey);
+    };
+    
+    checkStoredKey();
+  }, []);
 
   // Fetch teams - Added retry logic and better error handling
   const teamsQuery = useQuery<LinearTeam[]>({
@@ -77,10 +91,10 @@ const Index = () => {
 
   // Update loading state when teams query completes
   useEffect(() => {
-    if (!teamsQuery.isLoading) {
+    if (!teamsQuery.isLoading && teamsQuery.data) {
       setIsLoadingTeams(false);
     }
-  }, [teamsQuery.isLoading]);
+  }, [teamsQuery.isLoading, teamsQuery.data]);
 
   // Improved team filtering - include only the specific allowed teams and exclude the standalone Product team
   const filteredTeams = teamsQuery.data?.filter(team => {
@@ -115,11 +129,16 @@ const Index = () => {
 
   // Set initial team when teams are loaded
   useEffect(() => {
-    if (filteredTeams && filteredTeams.length > 0 && !selectedTeamId) {
-      console.log("Setting initial team ID:", filteredTeams[0].id);
-      setSelectedTeamId(filteredTeams[0].id);
+    if (filteredTeams && filteredTeams.length > 0 && !selectedTeamId && !isLoadingTeams && teamsQuery.data) {
+      // Small delay to ensure all state updates are complete
+      const timer = setTimeout(() => {
+        console.log("Setting initial team ID:", filteredTeams[0].id);
+        setSelectedTeamId(filteredTeams[0].id);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [filteredTeams, selectedTeamId]);
+  }, [filteredTeams, selectedTeamId, isLoadingTeams, teamsQuery.data]);
 
   // Fetch metrics for the selected team only if we have a valid team ID
   const metricsQuery = useQuery<TeamMetrics>({
@@ -130,7 +149,7 @@ const Index = () => {
       }
       return linearService.getTeamMetrics(selectedTeamId);
     },
-    enabled: !!selectedTeamId && hasApiKey && !isLoadingTeams,
+    enabled: !!selectedTeamId && hasApiKey && !isLoadingTeams && !!filteredTeams && filteredTeams.length > 0,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
@@ -152,7 +171,7 @@ const Index = () => {
       }
       return linearService.getIssuesByTeam(selectedTeamId);
     },
-    enabled: !!selectedTeamId && hasApiKey && !isLoadingTeams,
+    enabled: !!selectedTeamId && hasApiKey && !isLoadingTeams && !!filteredTeams && filteredTeams.length > 0,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     meta: {
@@ -174,6 +193,25 @@ const Index = () => {
     }
   };
 
+  // Handle settings click - show API config or clear data
+  const handleSettingsClick = () => {
+    setShowApiConfig(true);
+  };
+
+  // Handle clearing stored data
+  const handleClearData = async () => {
+    try {
+      await clearStoredApiKey();
+      setHasApiKey(false);
+      setShowApiConfig(true);
+      queryClient.clear();
+      toast.success("API key cleared successfully");
+    } catch (error) {
+      console.error("Error clearing API key:", error);
+      toast.error("Failed to clear API key");
+    }
+  };
+
   // Get the current team name
   const currentTeam = filteredTeams?.find((team) => team.id === selectedTeamId);
   const teamName = currentTeam?.name || "Team";
@@ -181,11 +219,13 @@ const Index = () => {
   const metrics = metricsQuery.data;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout onSettingsClick={handleSettingsClick}>
       {showApiConfig ? (
         <div className="flex items-center justify-center h-full">
-          <ApiKeyConfig onSuccessfulConnection={() => {
+          <ApiKeyConfig onSuccessfulConnection={async () => {
             setShowApiConfig(false);
+            const hasKey = await hasStoredApiKey();
+            setHasApiKey(hasKey);
             queryClient.invalidateQueries({ queryKey: ['teams'] });
           }} />
         </div>
