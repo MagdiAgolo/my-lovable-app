@@ -107,25 +107,6 @@ export default function VelocityTable({
     }
   }, [teamId, cycles]);
 
-  // Display a message if no cycles are available
-  if (!isLoadingCycles && (!cycles || cycles.length === 0)) {
-    return (
-      <div className="p-6 text-center">
-        <h3 className="text-lg font-medium text-gray-300 mb-2">No Sprint Cycles Found</h3>
-        <p className="text-gray-400 mb-4">There are no sprint cycles available for this team.</p>
-        <div className="flex justify-center">
-          <button
-            onClick={onRefresh}
-            className="flex items-center px-3 py-2 bg-black text-green-400 hover:bg-gray-900 border border-primary rounded text-sm"
-          >
-            <RefreshCw className="w-3 h-3 mr-2" />
-            Refresh Data
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Add scope creep useEffect here - MOVED UP to avoid conditional execution
   useEffect(() => {
     if (!cycles || !issues) return;
@@ -137,7 +118,7 @@ export default function VelocityTable({
           return {
             cycleId: cycle.id,
             cycleName: cycle.name,
-            originalPoints: cycle.points || 0,
+            originalPoints: 0,
             addedPoints: 0,
             percentage: 0,
             addedIssues: 0
@@ -145,17 +126,30 @@ export default function VelocityTable({
         }
         
         const cycleStartDate = new Date(cycle.startsAt);
+        
+        // Calculate original points from issues created BEFORE the sprint started
+        const originalIssues = cycleIssues.filter(issue => 
+          new Date(issue.createdAt) <= cycleStartDate
+        );
+        const originalPoints = originalIssues.reduce((sum, issue) => 
+          sum + (issue.estimate || 0), 0);
+        
+        // Calculate added points from issues created AFTER the sprint started
         const addedIssues = cycleIssues.filter(issue => 
           new Date(issue.createdAt) > cycleStartDate
         );
-        
         const addedPoints = addedIssues.reduce((sum, issue) => 
           sum + (issue.estimate || 0), 0);
         
-        const originalPoints = cycle.points || 0;
+        // Calculate scope creep percentage
         const percentage = originalPoints > 0 
           ? (addedPoints / originalPoints) * 100 
-          : 0;
+          : (addedPoints > 0 ? 100 : 0); // If no original points but added points exist, it's 100% scope creep
+        
+        console.log(`🎯 SCOPE CREEP for ${cycle.name}:`);
+        console.log(`   Original issues: ${originalIssues.length} (${originalPoints} points)`);
+        console.log(`   Added issues: ${addedIssues.length} (${addedPoints} points)`);
+        console.log(`   Scope creep: ${percentage.toFixed(1)}%`);
         
         return {
           cycleId: cycle.id,
@@ -425,6 +419,25 @@ export default function VelocityTable({
   const hasTeamNotFoundError = 
     (issuesError && issuesError.message?.includes("Entity not found: Team")) ||
     (cyclesError && cyclesError.message?.includes("Entity not found: Team"));
+
+  // Display a message if no cycles are available (moved from early return)
+  if (!isLoadingCycles && (!cycles || cycles.length === 0)) {
+    return (
+      <div className="p-6 text-center">
+        <h3 className="text-lg font-medium text-gray-300 mb-2">No Sprint Cycles Found</h3>
+        <p className="text-gray-400 mb-4">There are no sprint cycles available for this team.</p>
+        <div className="flex justify-center">
+          <button
+            onClick={onRefresh}
+            className="flex items-center px-3 py-2 bg-black text-green-400 hover:bg-gray-900 border border-primary rounded text-sm"
+          >
+            <RefreshCw className="w-3 h-3 mr-2" />
+            Refresh Data
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (hasTeamNotFoundError) {
     return (

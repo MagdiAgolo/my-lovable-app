@@ -1,6 +1,6 @@
 // services/linearService.ts
 import { LinearIssue, LinearTeam, TeamMetrics, LinearCycle } from "@/types/linear";
-import { apiConfig, getLinearApiKey } from "@/config/api-config";
+import { apiConfig, getLinearApiKey, getLinearApiKeySync } from "@/config/api-config";
 import { toast } from "sonner";
 
 // Maximum number of retry attempts for API requests
@@ -49,7 +49,7 @@ export const linearService = {
   },
 
   async testConnection(): Promise<boolean> {
-    const apiKey = getLinearApiKey();
+    const apiKey = await getLinearApiKey();
     if (!apiKey) return false;
 
     try {
@@ -81,7 +81,7 @@ export const linearService = {
   },
 
   async executeGraphQL(query: string, variables?: Record<string, any>, retryAttempt = 0): Promise<any> {
-    const apiKey = getLinearApiKey();
+    const apiKey = await getLinearApiKey();
     
     if (!apiKey) {
       console.error("Linear API key not set");
@@ -234,7 +234,7 @@ export const linearService = {
   // Fetch teams with improved error handling
   async getTeams(): Promise<LinearTeam[]> {
     try {
-      const apiKey = getLinearApiKey();
+      const apiKey = await getLinearApiKey();
       if (!apiKey) {
         console.error("API key not set");
         toast.error("Please set your Linear API key first");
@@ -293,7 +293,6 @@ export const linearService = {
     // Validate teamId early
     if (!teamId) {
       console.error("No teamId provided to getIssuesByTeam");
-      toast.error("No team selected. Please select a valid team.");
       return [];
     }
 

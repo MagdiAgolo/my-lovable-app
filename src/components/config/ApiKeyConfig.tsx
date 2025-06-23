@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { linearService } from '@/services/linearService';
-import { setLinearApiKey } from '@/config/api-config';
-import { toast } from '@/components/ui/sonner';
+import { setLinearApiKey, hasStoredApiKey, clearStoredApiKey } from '@/config/api-config';
+import { toast } from 'sonner';
 import { ThemeSelector } from './ThemeSelector';
 
 interface ApiKeyConfigProps {
@@ -14,6 +14,17 @@ export const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ onSuccessfulConnecti
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasExistingKey, setHasExistingKey] = useState(false);
+
+  // Check if there's an existing API key
+  useEffect(() => {
+    const checkExistingKey = async () => {
+      const hasKey = await hasStoredApiKey();
+      setHasExistingKey(hasKey);
+    };
+    
+    checkExistingKey();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +40,10 @@ export const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ onSuccessfulConnecti
       }
 
       // Set the API key
-      setLinearApiKey(cleanKey);
+      const success = await setLinearApiKey(cleanKey);
+      if (!success) {
+        throw new Error('Failed to securely store API key');
+      }
       linearService.setApiKey(cleanKey);
 
       // Test the connection
@@ -53,6 +67,17 @@ export const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ onSuccessfulConnecti
     }
   };
 
+  const handleClearApiKey = async () => {
+    try {
+      await clearStoredApiKey();
+      setHasExistingKey(false);
+      toast.success("API key cleared successfully");
+    } catch (error) {
+      console.error("Error clearing API key:", error);
+      toast.error("Failed to clear API key");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Theme Selector */}
@@ -63,7 +88,10 @@ export const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ onSuccessfulConnecti
         <CardHeader>
           <CardTitle>Linear API Key</CardTitle>
           <CardDescription>
-            Enter your Linear API key to connect your account. You can find your API key in your Linear settings.
+            {hasExistingKey 
+              ? "Update your Linear API key or clear the stored key to disconnect."
+              : "Enter your Linear API key to connect your account. You can find your API key in your Linear settings."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,13 +112,25 @@ export const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ onSuccessfulConnecti
                 You can find your API key in your Linear settings under API.
               </p>
             </div>
-            <Button 
-              type="submit" 
-              disabled={isLoading || !apiKey.trim()}
-              className="w-full"
-            >
-              {isLoading ? 'Connecting...' : 'Connect'}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                type="submit" 
+                disabled={isLoading || !apiKey.trim()}
+                className="flex-1"
+              >
+                {isLoading ? 'Connecting...' : hasExistingKey ? 'Update Key' : 'Connect'}
+              </Button>
+              {hasExistingKey && (
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={handleClearApiKey}
+                  className="px-4"
+                >
+                  Clear Key
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
